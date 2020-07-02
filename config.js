@@ -7,6 +7,7 @@ exports.jsonConfig = function () {
         "pathModels": path + "models",
         "pathDBconnetion": path + "db/connection",
         "pathLogger": path + "loggerConfig.js",
+        "pathMigrations": path + "db/migrations/",
     };
     return jsonConfig;
 };
