@@ -1,3 +1,10 @@
 {
-    "direct_message": "Please send this command per direct message."
+    "direct_message": "Please send this command per direct message.",
+    "invalid_command": "The command used is invalid",
+    "server_message": "Please send this command per public server",
+    "invalid_tip_count": "You have not made any mention",
+    "example_tip": "use the command as follows, for example: `.tip 100 @user`",
+    "insufficient_balance": "You don't have enough balance",
+    "min_tip": "Tip below the minimum allowed",
+    "max_tip": "The tip is much higher for the maximum allowed"
 }

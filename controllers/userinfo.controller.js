@@ -19,5 +19,18 @@ class UserInfoController {
         return false;
     }
 
+    async getUser( user_discord_id ) {
+        return await USERINFODAO.findByUserDiscordId( user_discord_id );
+    }
+
+    async sendTransaction( tx ){
+
+    }
+
+    async getBalance( user_discord_id ){
+        const userInfo= await USERINFODAO.findByUserDiscordId( user_discord_id );
+        return await HELIOS.getBalance( userInfo[0].wallet );
+    }
+
 }
 module.exports = UserInfoController;

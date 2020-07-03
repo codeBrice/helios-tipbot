@@ -6,5 +6,9 @@ class Util {
         else 
             return  false;
     }
+
+    parseFloat( amount ){
+        return parseFloat(amount);
+    }
 }
 module.exports = Util;
