@@ -5,6 +5,8 @@ const UTIL = new Util();
 const conf = require("../config.js").jsonConfig();
 const logger = require(conf.pathLogger).getHeliosBotLogger();
 const msgs = require('../util/msg.json');
+const MessageUtil = require('../util/Discord/message');
+const MESSAGEUTIL = new MessageUtil();
 
 class Account {
     async generateAccount( msg ){
@@ -18,7 +20,7 @@ class Account {
                 });
                 userInfo.then( userInfo => {
                     if ( userInfo )
-                        msg.author.send( 'Your wallet is: '+ '`'+userInfo.account.address+'`');
+                        msg.author.send( MESSAGEUTIL.msg_embed('Generate account', 'Your wallet is: '+ '`'+userInfo.account.address+'`') );
                     else 
                         msg.author.send('You already have a wallet, please use the `.wallet` command to know it.')
                 }).catch( error => {
@@ -28,6 +30,74 @@ class Account {
                 msg.delete( msg );
                 msg.author.send( msgs.direct_message + ' (`' + msg.content + '`)' );
             }
+        } catch (error) {
+            logger.error( error );
+        }
+    }
+
+    async getPrivateKey( msg ) {
+        try {
+            //console.log( 'msg guild id: ' + msg.guild + ' msg author id: ' + msg.author.id );
+            const isDm = UTIL.isDmChannel( msg.channel.type );
+            if ( isDm ){
+                const userInfoPrivateKey = new Promise((resolve, reject) => {
+                    const getPrivateKey = userInfoController.getPrivateKey( msg.author.id );
+                    resolve ( getPrivateKey );
+                });
+                userInfoPrivateKey.then( privateKey => {
+                    if ( privateKey )
+                        msg.author.send( MESSAGEUTIL.msg_embed( 'Private key' , 'Your private key is: '+ '`'+ privateKey +'`'))
+                    else
+                        msg.author.send('You dont have a account.')
+                }).catch( error => {
+                    logger.error( error );
+                });
+            } else {
+                msg.delete( msg );
+                msg.author.send( msgs.direct_message + ' (`' + msg.content + '`)' );
+            }
+        } catch (error) {
+            logger.error( error );
+        }
+    }
+
+    async getBalance( msg ){
+        try {
+            const userInfoBalance = new Promise((resolve, reject) => {
+                const getBalance = userInfoController.getBalance( msg.author.id );
+                resolve ( getBalance );
+            });
+            userInfoBalance.then( userInfoBalance => {
+                msg.author.send( MESSAGEUTIL.msg_embed('Balance' , msgs.balance + userInfoBalance + ' HLS') );
+                const isDm = UTIL.isDmChannel( msg.channel.type );
+                if ( !isDm ){
+                    MESSAGEUTIL.reaction_dm( msg );
+                }
+            }).catch( error => {
+                msg.author.send( msgs.balance_error );
+                logger.error( error );
+            })
+        } catch (error) {
+            logger.error( error );
+        }
+    }
+
+    async getWallet( msg ){
+        try {
+            const userInfoWallet = new Promise((resolve, reject) => {
+                const getWallet = userInfoController.getWallet( msg.author.id );
+                resolve ( getWallet );
+            });
+            userInfoWallet.then( wallet => {
+                msg.author.send( MESSAGEUTIL.msg_embed('Wallet info', msgs.wallet +'`'+wallet+'`'));
+                const isDm = UTIL.isDmChannel( msg.channel.type );
+                if ( !isDm ){
+                    MESSAGEUTIL.reaction_dm( msg );
+                }
+            }).catch( error => {
+                msg.author.send( msgs.wallet_error);
+                logger.error( error );
+            })
         } catch (error) {
             logger.error( error );
         }

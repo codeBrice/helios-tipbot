@@ -1,6 +1,5 @@
 const conf = require("../config.js").jsonConfig();
 const logger = require(conf.pathLogger).getHeliosBotLogger();
-const conn = global.connHeliosTipBot;
 const moment = require("moment");
 const { userinfo } = require("../models");
 

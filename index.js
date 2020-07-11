@@ -21,8 +21,8 @@ client.on('ready', () => {
 
 client.on('message', msg => {
     const ctx = new DiscordContext(msg);
-    console.log( msg );
-    COMMAND.onMessage( ctx, msg );
+    //console.log( msg );
+    COMMAND.onMessage( ctx, msg , client );
 });
 
 //token discord bot here
