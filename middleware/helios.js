@@ -140,7 +140,7 @@ class Helios {
       console.log('getBalance');
       if (await this.isConnected()) {
         const hls = await this.web3.hls.getBalance(address);
-        const balance = parseFloat(this.web3.utils.fromWei(String(this.web3.utils.toBN(hls)))).toFixed(2);
+        const balance = parseFloat(this.web3.utils.fromWei(String(this.web3.utils.toBN(hls)))).toFixed(5);
         //console.log(balance);
         return balance;
       }
@@ -150,6 +150,24 @@ class Helios {
     }
   }
 
+    /**
+   * Gets balance
+   * @param address  example : 0x9c8b20E830c0Db83862892Fc141808eA6a51FEa2
+   * @returns  balance string
+   */
+  async getBalanceInwei( address ) {
+    try {
+      console.log('getBalance');
+      if (await this.isConnected()) {
+        const hls = await this.web3.hls.getBalance(address);
+        //console.log(balance);
+        return hls;
+      }
+    } catch (error) {
+      console.log(error);
+      throw new Error('Failed to get balance');
+    }
+  }
   /**
    * Gets gas price
    * @returns  number
@@ -276,7 +294,7 @@ class Helios {
       }
     } catch (error) {
       console.log(error);
-      throw new Error('Failed sendTransaction');
+      throw new Error(error);
     }
   }
 
@@ -290,7 +308,7 @@ class Helios {
           await this.web3.hls.accounts.wallet.add(privateKey);
           const sendRewardBlock = await this.web3.hls.sendRewardBlock(address);
           console.log(sendRewardBlock);
-          return true;
+          return receivableTxs;
         }
         return false;
       }
@@ -342,6 +360,20 @@ class Helios {
     } catch (error) {
       console.log(error);
       throw new Error('Failed toWei');
+    }
+  }
+
+  async gasPriceSumAmount( amount , gasPrice){
+    try {
+      if (await this.isConnected()) {
+        const amountInWei = await this.web3.utils.toWei(String(amount))
+        const sum = parseFloat(this.web3.utils.fromWei(String(this.web3.utils.toBN(gasPrice)))) + 
+        parseFloat(this.web3.utils.fromWei(String(this.web3.utils.toBN(amountInWei))));
+        return sum;
+      }
+    } catch (error) {
+      console.log(error);
+      throw new Error('Failed to get sum gas price and amount to tip');
     }
   }
 
