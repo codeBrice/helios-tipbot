@@ -150,6 +150,17 @@ class Helios {
     }
   }
 
+  async getAmountFloat(amount) {
+    try {
+      if (await this.isConnected()) {
+        const balance = parseFloat(this.web3.utils.fromWei(String(this.web3.utils.toBN(amount)))).toFixed(5);
+        return balance;
+      }
+    } catch (error) {
+      console.log(error);
+      throw new Error('Failed to get amountfloat');
+    }
+  }
     /**
    * Gets balance
    * @param address  example : 0x9c8b20E830c0Db83862892Fc141808eA6a51FEa2

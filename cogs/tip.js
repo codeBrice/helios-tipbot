@@ -11,9 +11,7 @@ const MessageUtil = require('../util/Discord/message');
 const MESSAGEUTIL = new MessageUtil();
 const Transaction = require('../controllers/transactions.controller');
 const TRANSACTION = new Transaction();
-const SendTransaction = require('../entities/SendTransactions');
-const Helios = require('../middleware/helios');
-const HELIOS = new Helios();
+
 class Tip {
     async tip( ctx, msg, isSplit = false, client, clientRedis){
         try {
@@ -52,20 +50,18 @@ class Tip {
                         //console.log( 'menciones', msg.mentions.users.array() );
                         if ( msg.mentions.users.array().length > 0 ) {
                             let user_tip_id_list = [];
+
                             for( let user of msg.mentions.users.array() ) {
                                 if ( user.id != msg.author.id && user.id != msg.client.user.id)
                                     user_tip_id_list.push( { user_discord_id: user.id, tag: user.tag } );
                             }
-                            if(  ( isSplit ? getTotalAmountWithGas/user_tip_id_list.length : getTotalAmountWithGas*user_tip_id_list.length) > userInfoAuthorBalance ) {
+
+                            if(  ( isSplit ? getTotalAmountWithGas : getTotalAmountWithGas*user_tip_id_list.length) > userInfoAuthorBalance ) {
                                 msg.author.send( msgs.insufficient_balance + ', remember to have enough gas for the transaction.');
                                 MESSAGEUTIL.reaction_fail( msg );
                                 return;
                             }
-                            if (  (isSplit ? amount/user_tip_id_list.length : amount*user_tip_id_list.length) > userInfoAuthorBalance ) {
-                                msg.author.send( msgs.insufficient_balance + ' to tip.');
-                                MESSAGEUTIL.reaction_fail( msg );
-                                return;
-                            }
+
                             if ( isSplit )
                                 amount = amount / user_tip_id_list.length;
                             
@@ -79,50 +75,25 @@ class Tip {
                                     clientRedis.set( 'tip:'+msg.author.id, msg.author.id );
                                     clientRedis.expire('tip:'+msg.author.id , 10);
                                     let txs = [];
-                                    let keytore_wallet_send;
-                                    let userInfoReceive;
                                     const userInfoSend = await new Promise( ( resolve, reject ) => {
                                         const getUser = USERINFO.getUser( msg.author.id );
                                         resolve( getUser)
                                     });
-                                    for( let user of user_tip_id_list ) {
-                                        let transactionEntitie = new SendTransaction();
-                                        userInfoReceive = await new Promise((resolve, reject) => {
-                                            const getUser = USERINFO.getUser( user.user_discord_id );
-                                            resolve( getUser );
-                                        });
-                                        if( !userInfoReceive ) {
-                                            msg.author.send(`The user ${user.tag} has not generated an account in Helios TipBot.`);
-                                            MESSAGEUTIL.reaction_fail( msg );
-                                            return;
-                                        }
-                                        
-                                        if ( keytore_wallet_send == null )
-                                            keytore_wallet_send = userInfoSend.keystore_wallet;
-        
-                                        transactionEntitie.from = userInfoSend.wallet;
-                                        transactionEntitie.to = userInfoReceive.wallet;
-                                        transactionEntitie.gasPrice = await HELIOS.toWei(String(await HELIOS.getGasPrice()));
-                                        transactionEntitie.gas = envConfig.GAS;
-                                        transactionEntitie.value = await HELIOS.toWeiEther((String(amount)));
-                                        transactionEntitie.user_discord_id_receive = userInfoReceive.user_discord_id;
-                                        transactionEntitie.user_id = userInfoReceive.id;
-                                        transactionEntitie.helios_amount = amount;
-                                        txs.push( transactionEntitie );
-                                    }
+
+                                    txs = await UTIL.arrayTransaction( msg , user_tip_id_list, userInfoSend , amount );
                                     console.log( txs );
                                     const transaction = new Promise( (resolve, reject) => {
-                                        const sendingTx = TRANSACTION.sendTransaction( txs , keytore_wallet_send );
+                                        const sendingTx = TRANSACTION.sendTransaction( txs , userInfoSend.keystore_wallet);
                                         resolve( sendingTx );
                                     });
                                     transaction.then( async tx => {
                                         if ( tx.length > 0 ) {
                                             for ( let receive of tx ) {
-                                                const userInfoReceive = await new Promise((resolve, reject) => {
+                                                let userInfoReceive = await new Promise((resolve, reject) => {
                                                     const getUser = USERINFO.getUser( receive.user_discord_id_receive );
                                                     resolve( getUser );
                                                 });
-                                                const receiveTx = await TRANSACTION.receiveTransaction( receive, userInfoReceive.keystore_wallet, true , userInfoSend.id, receive.user_id);
+                                                let receiveTx = await TRANSACTION.receiveTransaction( receive, userInfoReceive.keystore_wallet, true , userInfoSend.id, receive.user_id);
                                                 if ( receiveTx.length > 0  ) {
                                                     client.fetchUser( receive.user_discord_id_receive , false ).then(user => {
                                                         user.send(MESSAGEUTIL.msg_embed('Tip receive',

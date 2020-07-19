@@ -9,6 +9,8 @@ const Command = require('./command');
 const COMMAND = new Command();
 const redis = require("redis");
 const clientRedis = redis.createClient();
+const cron = require('./cron/cron.js').fnRunCrons();
+global.client = client;
 
 clientRedis.on("connect", function() {
     logger.info("You are now connected on Redis DB");
@@ -30,6 +32,5 @@ client.on('message', msg => {
         logger.error( error );
     }
 });
-
 //token discord bot here
 client.login(envConfig.TOKENBOT);
