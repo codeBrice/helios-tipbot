@@ -283,13 +283,12 @@ class Helios {
     }
   }
 
-  async sendTransaction(tx, privateKey) {
+  async sendTransaction(txs, privateKey) {
     try {
       console.log('sendTransaction');
       if (await this.isConnected()) {
         await this.web3.hls.accounts.wallet.add(privateKey);
-        const transaction = await this.web3.hls.sendTransactions([tx]);
-        console.log(transaction);
+        const transaction = await this.web3.hls.sendTransactions(txs);
         return transaction;
       }
     } catch (error) {

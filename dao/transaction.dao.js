@@ -12,5 +12,17 @@ class TransactionDao {
             logger.error( error );
         }
     }
+
+    async bulkCreate( txs ) {
+        try {
+            transactions.bulkCreate( txs ).then( tx => {
+                return tx;
+            }).catch( error => {
+                logger.error( error ); 
+            });
+        } catch (error) {
+            logger.error( error );
+        }
+    }
 }
 module.exports = TransactionDao;

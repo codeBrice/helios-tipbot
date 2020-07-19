@@ -32,8 +32,8 @@ Object.keys(db).forEach(modelName => {
 db.sequelize = sequelize;
 db.Sequelize = Sequelize;
 sequelize.authenticate().then(() => {
-    logger.info("Conexion exitosa");
+    logger.info("Success connection to DB");
 }).catch(err => {
-    logger.error("Conexion fallida", err);
+    logger.error("Failed connection to DB", err);
 });
 module.exports = db;

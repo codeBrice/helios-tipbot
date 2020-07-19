@@ -11,9 +11,11 @@ const MessageUtil = require('../util/Discord/message');
 const MESSAGEUTIL = new MessageUtil();
 const Transaction = require('../controllers/transactions.controller');
 const TRANSACTION = new Transaction();
-
+const SendTransaction = require('../entities/SendTransactions');
+const Helios = require('../middleware/helios');
+const HELIOS = new Helios();
 class Tip {
-    async tip( ctx, msg, isSplit = false, client){
+    async tip( ctx, msg, isSplit = false, client, clientRedis){
         try {
             //console.log( ctx.args[2] );
             const isDm = UTIL.isDmChannel( msg.channel.type );
@@ -48,46 +50,87 @@ class Tip {
                     });
                     userInfoAuthorBalance.then( async userInfoAuthorBalance => {
                         //console.log( 'menciones', msg.mentions.users.array() );
-                        if(  getTotalAmountWithGas > userInfoAuthorBalance ) {
-                            msg.author.send( msgs.insufficient_balance + ', remember to have enough gas for the transaction.');
-                            MESSAGEUTIL.reaction_fail( msg );
-                            return;
-                        }
                         if ( msg.mentions.users.array().length > 0 ) {
-                            if ( amount > userInfoAuthorBalance ){
-                                msg.author.send( msgs.insufficient_balance + ' to tip.');
-                                return;
-                            }
                             let user_tip_id_list = [];
                             for( let user of msg.mentions.users.array() ) {
                                 if ( user.id != msg.author.id && user.id != msg.client.user.id)
                                     user_tip_id_list.push( { user_discord_id: user.id, tag: user.tag } );
                             }
-                            if ( isSplit ) 
+                            if(  ( isSplit ? getTotalAmountWithGas/user_tip_id_list.length : getTotalAmountWithGas*user_tip_id_list.length) > userInfoAuthorBalance ) {
+                                msg.author.send( msgs.insufficient_balance + ', remember to have enough gas for the transaction.');
+                                MESSAGEUTIL.reaction_fail( msg );
+                                return;
+                            }
+                            if (  (isSplit ? amount/user_tip_id_list.length : amount*user_tip_id_list.length) > userInfoAuthorBalance ) {
+                                msg.author.send( msgs.insufficient_balance + ' to tip.');
+                                MESSAGEUTIL.reaction_fail( msg );
+                                return;
+                            }
+                            if ( isSplit )
                                 amount = amount / user_tip_id_list.length;
-                                
-                            for( let user of user_tip_id_list ) {
-                                const userInfoSend = new Promise((resolve, reject) => {
-                                    const getUser = USERINFO.getUser( user.user_discord_id );
-                                    resolve( getUser );
-                                });
-                                userInfoSend.then( userInfoSend => {
-                                    if( !userInfoSend.length ) {
-                                        msg.author.send(`The user ${user.tag} has not generated an account in Helios TipBot.`);
-                                        MESSAGEUTIL.reaction_fail( msg );
-                                        return;
-                                    }
-                                    const transaction = new Promise( (resolve, reject) => {
-                                        const sendingTx = TRANSACTION.sendTransaction( msg.author.id, userInfoSend[0], amount);
-                                        resolve( sendingTx );
-                                    })
-                                    transaction.then( tx => {
-                                        if ( tx ) {
-                                            client.fetchUser(userInfoSend[0].user_discord_id,false).then(user => {
-                                                user.send(MESSAGEUTIL.msg_embed('Tip receive',
-                                                'The user'+ msg.author + 'tip you `' + amount +' HLS`')); 
-                                            MESSAGEUTIL.reaction_complete_tip( msg );
+                            
+                            //verified if user has tip the last 10seconds
+                            clientRedis.get('tip:'+msg.author.id, async function(err, reply) {
+                                if ( reply != null ) {
+                                    msg.author.send( msgs.limit_exceed );
+                                    MESSAGEUTIL.reaction_fail( msg );
+                                    return;
+                                } else {
+                                    clientRedis.set( 'tip:'+msg.author.id, msg.author.id );
+                                    clientRedis.expire('tip:'+msg.author.id , 10);
+                                    let txs = [];
+                                    let keytore_wallet_send;
+                                    let userInfoReceive;
+                                    const userInfoSend = await new Promise( ( resolve, reject ) => {
+                                        const getUser = USERINFO.getUser( msg.author.id );
+                                        resolve( getUser)
+                                    });
+                                    for( let user of user_tip_id_list ) {
+                                        let transactionEntitie = new SendTransaction();
+                                        userInfoReceive = await new Promise((resolve, reject) => {
+                                            const getUser = USERINFO.getUser( user.user_discord_id );
+                                            resolve( getUser );
                                         });
+                                        if( !userInfoReceive ) {
+                                            msg.author.send(`The user ${user.tag} has not generated an account in Helios TipBot.`);
+                                            MESSAGEUTIL.reaction_fail( msg );
+                                            return;
+                                        }
+                                        
+                                        if ( keytore_wallet_send == null )
+                                            keytore_wallet_send = userInfoSend.keystore_wallet;
+        
+                                        transactionEntitie.from = userInfoSend.wallet;
+                                        transactionEntitie.to = userInfoReceive.wallet;
+                                        transactionEntitie.gasPrice = await HELIOS.toWei(String(await HELIOS.getGasPrice()));
+                                        transactionEntitie.gas = envConfig.GAS;
+                                        transactionEntitie.value = await HELIOS.toWeiEther((String(amount)));
+                                        transactionEntitie.user_discord_id_receive = userInfoReceive.user_discord_id;
+                                        transactionEntitie.user_id = userInfoReceive.id;
+                                        transactionEntitie.helios_amount = amount;
+                                        txs.push( transactionEntitie );
+                                    }
+                                    console.log( txs );
+                                    const transaction = new Promise( (resolve, reject) => {
+                                        const sendingTx = TRANSACTION.sendTransaction( txs , keytore_wallet_send );
+                                        resolve( sendingTx );
+                                    });
+                                    transaction.then( async tx => {
+                                        if ( tx.length > 0 ) {
+                                            for ( let receive of tx ) {
+                                                const userInfoReceive = await new Promise((resolve, reject) => {
+                                                    const getUser = USERINFO.getUser( receive.user_discord_id_receive );
+                                                    resolve( getUser );
+                                                });
+                                                const receiveTx = await TRANSACTION.receiveTransaction( receive, userInfoReceive.keystore_wallet, true , userInfoSend.id, receive.user_id);
+                                                if ( receiveTx.length > 0  ) {
+                                                    client.fetchUser( receive.user_discord_id_receive , false ).then(user => {
+                                                        user.send(MESSAGEUTIL.msg_embed('Tip receive',
+                                                        'The user'+ msg.author + ' tip you `' + amount +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) ); 
+                                                        MESSAGEUTIL.reaction_complete_tip( msg );
+                                                    });
+                                                }
+                                            }
                                         } else {
                                             msg.author.send( msgs.general_transaction_fail );
                                             MESSAGEUTIL.reaction_fail( msg );
@@ -103,8 +146,9 @@ class Tip {
                                         MESSAGEUTIL.reaction_fail( msg );
                                         logger.error( error );
                                     });
-                                });
-                            }
+                                }
+                            });
+
                         } else {
                             msg.author.send( msgs.invalid_tip_count + ', ' + msgs.example_tip)
                             MESSAGEUTIL.reaction_fail( msg );

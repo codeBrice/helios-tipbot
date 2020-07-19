@@ -1,3 +1,5 @@
+require('dotenv').config();
+const envConfig = process.env;
 const UserInfoController = require("../controllers/userinfo.controller");
 const userInfoController = new UserInfoController();
 const Util = require('../util/util');
@@ -7,6 +9,11 @@ const logger = require(conf.pathLogger).getHeliosBotLogger();
 const msgs = require('../util/msg.json');
 const MessageUtil = require('../util/Discord/message');
 const MESSAGEUTIL = new MessageUtil();
+const TransactionController = require('../controllers/transactions.controller');
+const TRANSACTIONCONTROLLER = new TransactionController();
+const SendTransaction = require('../entities/SendTransactions');
+const Helios = require('../middleware/helios');
+const HELIOS = new Helios();
 
 class Account {
     async generateAccount( msg ){
@@ -96,9 +103,61 @@ class Account {
                 }
             }).catch( error => {
                 msg.author.send( msgs.wallet_error);
+                MESSAGEUTIL.reaction_fail( msg );
                 logger.error( error );
             })
         } catch (error) {
+            msg.author.send( msgs.wallet_error);
+            MESSAGEUTIL.reaction_fail( msg );
+            logger.error( error );
+        }
+    }
+
+    async withdraw( ctx, msg ) {
+        try {
+            if ( UTIL.isDmChannel(msg.channel.type) ) {
+                let amount = UTIL.parseFloat( ctx.args[1] );
+    
+                if ( typeof amount != "number" || isNaN(amount) ){
+                    msg.author.send( msgs.invalid_command + ', the helios amount is not numeric. ' + envConfig.ALIASCOMMAND + 'withdraw 100 0x00000');
+                    return;
+                }
+    
+                const userInfo = new Promise( ( resolve, reject ) => {
+                    resolve( userInfoController.getUser( msg.author.id ) );
+                })
+                userInfo.then( async userInfoData => {
+                    if( userInfoData ) {
+                        let tx = [];
+                        let transactionEntitie = new SendTransaction();
+                        transactionEntitie.from = userInfoData.wallet;
+                        transactionEntitie.to = ctx.args[2];
+                        transactionEntitie.gasPrice = await HELIOS.toWei(String(await HELIOS.getGasPrice()));
+                        transactionEntitie.gas = envConfig.GAS;
+                        transactionEntitie.value = await HELIOS.toWeiEther((String(amount)));
+                        tx.push( transactionEntitie );
+                        const sendTx = await new Promise( ( resolve, reject ) => {
+                            resolve( TRANSACTIONCONTROLLER.sendTransaction( tx , userInfoData.keystore_wallet) ) 
+                        })
+                        if ( !sendTx.length ) {
+                            msg.author.send( msgs.error_withdraw + envConfig.ALIASCOMMAND + 'withdraw 100 0x00000' );
+                            logger.error( error );
+                        } else {
+                            msg.author.send(MESSAGEUTIL.msg_embed('Withdraw process', msgs.withdraw_success)); 
+                        }
+                    }
+                }).catch( error => {
+                    msg.author.send( msgs.error_withdraw + envConfig.ALIASCOMMAND + 'withdraw 100 0x00000' );
+                    MESSAGEUTIL.reaction_fail( msg );
+                    logger.error( error );
+                });
+            } else {
+                msg.delete( msg );
+                msg.author.send( msgs.direct_message + ' (`.withdraw`)' );
+            }
+        } catch (error) {
+            msg.author.send( msgs.error_withdraw + envConfig.ALIASCOMMAND + 'withdraw 100 0x00000') ;
+            MESSAGEUTIL.reaction_fail( msg );
             logger.error( error );
         }
     }
