@@ -24,7 +24,7 @@ class UserInfoDao{
 
     async findByUserDiscordId ( user_discord_id ) {
         try {
-            return userinfo.findAll({
+            return userinfo.findOne({
                 where: {
                     user_discord_id: user_discord_id
                 }

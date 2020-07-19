@@ -7,22 +7,28 @@ const logger = require(conf.pathLogger).getHeliosBotLogger();
 const DiscordContext = require('discord-context');
 const Command = require('./command');
 const COMMAND = new Command();
-/* const redis = require("redis");
+const redis = require("redis");
 const clientRedis = redis.createClient();
 
 clientRedis.on("connect", function() {
-    console.log("You are now connected on Redis DB");
-}); */
+    logger.info("You are now connected on Redis DB");
+});
 
 client.on('ready', () => {
-    console.log( `Bot is ready as: ${client.user.tag}!` );
-    client.user.setStatus('dnd');
+    logger.info(`Bot is ready as: ${client.user.tag}!`);
+    client.user.setStatus('online');
 });
 
 client.on('message', msg => {
-    const ctx = new DiscordContext(msg);
-    //console.log( msg );
-    COMMAND.onMessage( ctx, msg , client );
+    try {
+        const ctx = new DiscordContext(msg);
+        if (msg.author.bot)
+            return;
+
+        COMMAND.onMessage( ctx, msg , client , clientRedis);
+    } catch (error) {
+        logger.error( error );
+    }
 });
 
 //token discord bot here

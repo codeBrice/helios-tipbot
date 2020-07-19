@@ -21,6 +21,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING(200),
       allowNull: false,
     },
+    isTip: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+    },
     date: {
       type: DataTypes.DATE,
       allowNull: false

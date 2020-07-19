@@ -39,6 +39,10 @@ module.exports = {
         type: Sequelize.STRING(200),
         allowNull: false,
       },
+      isTip: {
+        type: Sequelize.BOOLEAN,
+        allowNull: false,
+      },
       date : {
         type: Sequelize.DATE,
         allowNull: false,

@@ -15,12 +15,16 @@ class Message {
         await msg.react('✅');
     }
 
-    msg_embed( title, description){
+    msg_embed( title, description, isTip = false , url = ''){
         // inside a command, event listener, etc.
-        const exampleEmbed = new Discord.RichEmbed()
+        let exampleEmbed = new Discord.RichEmbed()
         .setColor('#e6d46a')
         .setTitle(title)
         .setDescription(description)
+        
+        if ( isTip ) {
+            exampleEmbed.addField('Check transaction in explorer', url);
+        }
         return exampleEmbed;
     }
 }
