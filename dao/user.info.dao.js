@@ -33,6 +33,14 @@ class UserInfoDao{
             logger.error( error );
         }
     }
+
+    async findAdll () {
+        try {
+            return userinfo.findAll();
+        } catch (error) {
+            logger.error( error );
+        }
+    }
 }
 
 module.exports = UserInfoDao;

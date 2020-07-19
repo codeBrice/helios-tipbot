@@ -24,17 +24,28 @@ class TransactionController {
     async receiveTransaction( receive, keystore, isTip = false, user_id_send, user_id_receive ){
         const privateKey = await HELIOS.jsonToAccount( keystore , envConfig.ENCRYPT_KEYSTORE );
         const receiveTxs = await HELIOS.getReceivableTransactions( receive.to, privateKey.privateKey );
-        let transaction = new Transaction();
-        if ( isTip ) {
-            transaction.isTip = true;
+        if ( receiveTxs.length ) {
+            let transaction = new Transaction();
             transaction.send_status = true;
-            transaction.to_user_info_id = user_id_receive;
-            transaction.from_user_info_id = user_id_send;
             transaction.date = moment().utc().toDate();
-            transaction.helios_amount = receive.helios_amount;
-            transaction.transaction_hash = receiveTxs[0].hash;
+            if ( isTip ) {
+                transaction.isTip = true;
+                transaction.to_user_info_id = user_id_receive;
+                transaction.from_user_info_id = user_id_send;
+                transaction.helios_amount = receive.helios_amount;
+                transaction.transaction_hash = receiveTxs[0].hash;
+                await TRANSACTIONDAO.create( transaction );
+            } else {
+                transaction.to_user_info_id = user_id_receive;
+                transaction.from_user_info_id = user_id_receive;
+                transaction.isTip = false;
+                for ( let receive of receiveTxs ) {
+                    transaction.helios_amount = await HELIOS.getAmountFloat(receive.value);
+                    transaction.transaction_hash = receive.hash;
+                    await TRANSACTIONDAO.create( transaction );
+                }
+            }
         }
-        await TRANSACTIONDAO.create( transaction );
         return receiveTxs;
     }
 }

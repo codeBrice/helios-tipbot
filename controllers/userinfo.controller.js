@@ -19,6 +19,10 @@ class UserInfoController {
         return false;
     }
 
+    async findAllUser() {
+        return await USERINFODAO.findAdll();
+    }
+
     async getUser( user_discord_id ) {
         return await USERINFODAO.findByUserDiscordId( user_discord_id );
     }
