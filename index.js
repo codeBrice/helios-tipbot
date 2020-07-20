@@ -11,6 +11,7 @@ const redis = require("redis");
 const clientRedis = redis.createClient();
 const cron = require('./cron/cron.js').fnRunCrons();
 global.client = client;
+global.clientRedis = clientRedis;
 
 clientRedis.on("connect", function() {
     logger.info("You are now connected on Redis DB");
@@ -23,11 +24,11 @@ client.on('ready', () => {
 
 client.on('message', msg => {
     try {
-        const ctx = new DiscordContext(msg);
+        global.ctx = new DiscordContext(msg);
         if (msg.author.bot)
             return;
 
-        COMMAND.onMessage( ctx, msg , client , clientRedis);
+        COMMAND.onMessage( msg );
     } catch (error) {
         logger.error( error );
     }

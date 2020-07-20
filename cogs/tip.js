@@ -13,7 +13,7 @@ const Transaction = require('../controllers/transactions.controller');
 const TRANSACTION = new Transaction();
 
 class Tip {
-    async tip( ctx, msg, isSplit = false, client, clientRedis){
+    async tip( msg, isSplit = false ){
         try {
             //console.log( ctx.args[2] );
             const isDm = UTIL.isDmChannel( msg.channel.type );
@@ -66,14 +66,14 @@ class Tip {
                                 amount = amount / user_tip_id_list.length;
                             
                             //verified if user has tip the last 10seconds
-                            clientRedis.get('tip:'+msg.author.id, async function(err, reply) {
+                            global.clientRedis.get('tip', async function(err, reply) {
                                 if ( reply != null ) {
                                     msg.author.send( msgs.limit_exceed );
                                     MESSAGEUTIL.reaction_fail( msg );
                                     return;
                                 } else {
-                                    clientRedis.set( 'tip:'+msg.author.id, msg.author.id );
-                                    clientRedis.expire('tip:'+msg.author.id , 10);
+                                    global.clientRedis.set( 'tip', 'tip' );
+                                    global.clientRedis.expire('tip', 10);
                                     let txs = [];
                                     const userInfoSend = await new Promise( ( resolve, reject ) => {
                                         const getUser = USERINFO.getUser( msg.author.id );
@@ -95,7 +95,7 @@ class Tip {
                                                 });
                                                 let receiveTx = await TRANSACTION.receiveTransaction( receive, userInfoReceive.keystore_wallet, true , userInfoSend.id, receive.user_id);
                                                 if ( receiveTx.length > 0  ) {
-                                                    client.fetchUser( receive.user_discord_id_receive , false ).then(user => {
+                                                    global.client.fetchUser( receive.user_discord_id_receive , false ).then(user => {
                                                         user.send(MESSAGEUTIL.msg_embed('Tip receive',
                                                         'The user'+ msg.author + ' tip you `' + amount +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) ); 
                                                         MESSAGEUTIL.reaction_complete_tip( msg );
