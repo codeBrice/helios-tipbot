@@ -4,7 +4,6 @@ const TransactionDao = require('../dao/transaction.dao');
 const TRANSACTIONDAO = new TransactionDao();
 const Helios = require('../middleware/helios');
 const HELIOS = new Helios();
-const UserInfo = require('../dao/user.info.dao');
 const moment = require("moment");
 const Transaction = require('../entities/Transaction');
 class TransactionController {

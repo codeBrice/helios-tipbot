@@ -13,7 +13,7 @@
     "wallet": "Your wallet is: ",
     "general_transaction_fail": "An error has ocurred sending the HLS.",
     "not_gas": "You don't have enough gas to send the tip",
-    "limit_exceed": "The limit for tip is every 10 seconds",
+    "limit_exceed": "Please wait 10 seconds and try again.",
     "error_withdraw": "An error has occurred, withdrawing your HLS. Remember the command is: ",
     "withdraw_success": "Your helios withdrawal has been successfully processed."
 }
