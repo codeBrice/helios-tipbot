@@ -20,7 +20,7 @@ class Tip {
             if ( isDm ) {
                 msg.author.send( msgs.server_message );
             } else {
-                let amount = UTIL.parseFloat( ctx.args[1] );
+                let amount = UTIL.parseFloat( global.ctx.args[1] );
                 if ( amount < envConfig.MINTIP ) {
                     msg.author.send( msgs.min_tip + '`(' + `${envConfig.MINTIP }` +' HLS)`');
                     MESSAGEUTIL.reaction_fail( msg );
@@ -66,14 +66,14 @@ class Tip {
                                 amount = amount / user_tip_id_list.length;
                             
                             //verified if user has tip the last 10seconds
-                            global.clientRedis.get('tip', async function(err, reply) {
+                            global.clientRedis.get('tip:'+msg.author.id, async function(err, reply) {
                                 if ( reply != null ) {
                                     msg.author.send( msgs.limit_exceed );
                                     MESSAGEUTIL.reaction_fail( msg );
                                     return;
                                 } else {
-                                    global.clientRedis.set( 'tip', 'tip' );
-                                    global.clientRedis.expire('tip', 10);
+                                    global.clientRedis.set( 'tip:'+msg.author.id, msg.author.id );
+                                    global.clientRedis.expire('tip:'+msg.author.id, 10);
                                     let txs = [];
                                     const userInfoSend = await new Promise( ( resolve, reject ) => {
                                         const getUser = USERINFO.getUser( msg.author.id );

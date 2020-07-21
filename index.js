@@ -20,6 +20,7 @@ clientRedis.on("connect", function() {
 client.on('ready', () => {
     logger.info(`Bot is ready as: ${client.user.tag}!`);
     client.user.setStatus('online');
+    client.user.setGame('Type '+envConfig.ALIASCOMMAND+'help to use the bot!!!');
 });
 
 client.on('message', msg => {
