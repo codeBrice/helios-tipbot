@@ -15,5 +15,9 @@
     "not_gas": "You don't have enough gas to send the tip",
     "limit_exceed": "Please wait 10 seconds and try again.",
     "error_withdraw": "An error has occurred, withdrawing your HLS. Remember the command is: ",
-    "withdraw_success": "Your helios withdrawal has been successfully processed."
+    "withdraw_success": "Your helios withdrawal has been successfully processed.",
+    "rain_error": "An error has occurred in the rain.",
+    "rain_inactive": "There are not enough active users.",
+    "min_rain": "Rain below the minimum allowed",
+    "max_rain": "The rain is much higher for the maximum allowed"
 }

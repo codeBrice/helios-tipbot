@@ -7,9 +7,110 @@ const UserInfoController = require('../controllers/userinfo.controller');
 const USERINFOCONTROLLER = new UserInfoController();
 const conf = require("../config.js").jsonConfig();
 const logger = require(conf.pathLogger).getHeliosBotLogger();
+const msgs = require('../util/msg.json');
+const MessageUtil = require('../util/Discord/message');
+const MESSAGEUTIL = new MessageUtil();
+const Transaction = require('../controllers/transactions.controller');
+const TRANSACTION = new Transaction();
 
 class Rain {
     constructor(){}
+
+    async rain( msg ) {
+        try {
+            if ( UTIL.isDmChannel( msg.channel.type ) )
+                return;
+
+            let getActiveUsers = await this.getActiveUser();
+
+            getActiveUsers = getActiveUsers.filter( active => active.user_discord_id != msg.author.id)
+            if ( getActiveUsers < envConfig.RAIN_MIN_ACTIVE_COUNT ) {
+                msg.author.send( msgs.rain_inactive )
+                MESSAGEUTIL.reaction_fail( msg );
+                return;
+            }
+
+            let amount = UTIL.parseFloat( global.ctx.args[1] );
+                if ( amount < envConfig.MIN_RAIN ) {
+                    msg.author.send( msgs.min_rain + '`(' + `${envConfig.MIN_RAIN }` +' HLS)`');
+                    MESSAGEUTIL.reaction_fail( msg );
+                    return;
+                }
+                if( amount > envConfig.MAX_RAIN ) {
+                    msg.author.send( msgs.max_rain + '`(' + `${envConfig.MAX_RAIN }` +' HLS)`');
+                    MESSAGEUTIL.reaction_fail( msg );
+                    return;
+                }
+                if ( typeof amount != "number" || isNaN(amount) ){
+                    msg.author.send( msgs.invalid_command + ', the helios amount is not numeric.');
+                    MESSAGEUTIL.reaction_fail( msg );
+                    return;
+                }
+
+                const getTotalAmountWithGas = await new Promise( (resolve, reject) => {
+                    const userInfo = USERINFOCONTROLLER.getGasPriceSumAmount( amount );
+                    resolve( userInfo );
+                });
+
+                const userInfoAuthorBalance = new Promise( (resolve, reject) => {
+                    const userInfoAuthor = USERINFOCONTROLLER.getBalance( msg.author.id );
+                    resolve( userInfoAuthor );
+                });
+                userInfoAuthorBalance.then( async userInfoAuthorBalance => {
+                    if( getTotalAmountWithGas > userInfoAuthorBalance ) {
+                        msg.author.send( msgs.insufficient_balance + ', remember to have enough gas for the transaction.');
+                        MESSAGEUTIL.reaction_fail( msg );
+                        return;
+                    }
+                    let txs = [];
+                    const userInfoSend = await new Promise( ( resolve, reject ) => {
+                        const getUser = USERINFOCONTROLLER.getUser( msg.author.id );
+                        resolve( getUser)
+                    });
+                    amount = amount/getActiveUsers.length;
+                    txs = await UTIL.arrayTransaction( msg , getActiveUsers, userInfoSend , amount );
+                    const transaction = new Promise( (resolve, reject) => {
+                        const sendingTx = TRANSACTION.sendTransaction( txs , userInfoSend.keystore_wallet);
+                        resolve( sendingTx );
+                    });
+                    transaction.then( async tx => {
+                        if ( tx.length > 0 ) {
+                            for ( let receive of tx ) {
+                                let userInfoReceive = await new Promise((resolve, reject) => {
+                                    const getUser = USERINFOCONTROLLER.getUser( receive.user_discord_id_receive );
+                                    resolve( getUser );
+                                });
+                                let receiveTx = await TRANSACTION.receiveTransaction( receive, userInfoReceive.keystore_wallet, true , userInfoSend.id, receive.user_id);
+                                if ( receiveTx.length > 0  ) {
+                                    global.client.fetchUser( receive.user_discord_id_receive , false ).then(user => {
+                                        user.send(MESSAGEUTIL.msg_embed('Rain receive',
+                                        'The user'+ msg.author + ' rain you `' + amount +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) ); 
+                                    });
+                                    MESSAGEUTIL.reaction_complete_rain( msg );
+                                }
+                            }
+                        } else {
+                            msg.author.send( msgs.general_transaction_fail );
+                            MESSAGEUTIL.reaction_fail( msg );
+                            logger.error( error );
+                        }
+                    }).catch( error => {
+                        if( error.message.includes('10 seconds') ) {
+                            msg.author.send( msgs.limit_exceed );
+                            MESSAGEUTIL.reaction_fail( msg );
+                            return;
+                        }
+                        msg.author.send( msgs.rain_error )
+                        MESSAGEUTIL.reaction_fail( msg );
+                        logger.error( error );
+                    });
+                });
+        } catch (error) {
+            logger.error( error );
+            msg.author.send( msgs.rain_error )
+            MESSAGEUTIL.reaction_fail( msg );
+        }
+    }
 
     async update_activity_user( msg ){
         try {
@@ -21,7 +122,7 @@ class Rain {
                     global.clientRedis.set('activity:'+msg.author.id, JSON.stringify({
                         'user_id': msg.author.id,
                         'last_msg': moment().utc().add(-4, 'hours').toDate(),
-                        'msg_count': 1
+                        'msg_count': 1,
                     }));
                     global.clientRedis.expire('activity:'+msg.author.id , 1800);
                 } else {
