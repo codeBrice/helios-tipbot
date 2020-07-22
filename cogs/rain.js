@@ -24,7 +24,7 @@ class Rain {
             let getActiveUsers = await this.getActiveUser();
 
             getActiveUsers = getActiveUsers.filter( active => active.user_discord_id != msg.author.id)
-            if ( getActiveUsers < envConfig.RAIN_MIN_ACTIVE_COUNT ) {
+            if ( getActiveUsers.length < envConfig.RAIN_MIN_ACTIVE_COUNT ) {
                 msg.author.send( msgs.rain_inactive )
                 MESSAGEUTIL.reaction_fail( msg );
                 return;
