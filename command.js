@@ -46,6 +46,7 @@ class Command {
                     break;
                 case 'help':
                     msg.author.send( MESSAGEUTIL.msg_embed_help() );
+                    MESSAGEUTIL.reaction_dm( msg );
                     break;
                 default:
                     break;
