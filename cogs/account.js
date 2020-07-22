@@ -139,7 +139,7 @@ class Account {
                                 resolve( userInfoAuthor );
                             });
                             userInfoAuthorBalance.then( async userInfoAuthorBalance => {
-                                if( getTotalAmountWithGas > userInfoAuthorBalance ) {
+                                if( getTotalAmountWithGas >= userInfoAuthorBalance ) {
                                     msg.author.send( msgs.amount_gas_error + ', remember to have enough gas for the transaction.');
                                     MESSAGEUTIL.reaction_fail( msg );
                                     return;

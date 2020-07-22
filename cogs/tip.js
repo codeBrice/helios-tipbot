@@ -56,7 +56,7 @@ class Tip {
                                     user_tip_id_list.push( { user_discord_id: user.id, tag: user.tag } );
                             }
 
-                            if(  ( isSplit ? getTotalAmountWithGas : getTotalAmountWithGas*user_tip_id_list.length) > userInfoAuthorBalance ) {
+                            if(  ( isSplit ? getTotalAmountWithGas : getTotalAmountWithGas*user_tip_id_list.length) >= userInfoAuthorBalance ) {
                                 msg.author.send( msgs.insufficient_balance + ', remember to have enough gas for the transaction.');
                                 MESSAGEUTIL.reaction_fail( msg );
                                 return;
