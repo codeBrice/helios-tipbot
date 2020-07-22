@@ -7,7 +7,7 @@ const TIP = new Tip();
 const envConfig = process.env;
 const Rain = require('./cogs/rain');
 const RAIN = new Rain();
-const MessageUtil = require('./util/Discord/Message');
+const MessageUtil = require('./util/Discord/message');
 const MESSAGEUTIL = new MessageUtil();
 
 class Command {
