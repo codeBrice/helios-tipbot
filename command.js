@@ -1,11 +1,11 @@
 require('dotenv').config();
 const DiscordContext = require('discord-context');
-const Account = require('./cogs/Account');
+const Account = require('./cogs/account');
 const ACCOUNT = new Account();
-const Tip = require('./cogs/Tip');
+const Tip = require('./cogs/tip');
 const TIP = new Tip();
 const envConfig = process.env;
-const Rain = require('./cogs/Rain');
+const Rain = require('./cogs/rain');
 const RAIN = new Rain();
 const MessageUtil = require('./util/Discord/Message');
 const MESSAGEUTIL = new MessageUtil();
