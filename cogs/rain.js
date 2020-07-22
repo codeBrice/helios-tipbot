@@ -1,6 +1,6 @@
 require('dotenv').config();
 const envConfig = process.env;
-const Util = require('../util/Util');
+const Util = require('../util/util');
 const UTIL = new Util();
 const moment = require("moment");
 const UserInfoController = require('../controllers/userinfo.controller');
@@ -8,7 +8,7 @@ const USERINFOCONTROLLER = new UserInfoController();
 const conf = require("../config.js").jsonConfig();
 const logger = require(conf.pathLogger).getHeliosBotLogger();
 const msgs = require('../util/msg.json');
-const MessageUtil = require('../util/Discord/Message');
+const MessageUtil = require('../util/Discord/message');
 const MESSAGEUTIL = new MessageUtil();
 const Transaction = require('../controllers/transactions.controller');
 const TRANSACTION = new Transaction();

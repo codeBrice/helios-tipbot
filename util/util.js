@@ -1,7 +1,7 @@
 const Helios = require("../middleware/helios");
 const SendTransaction = require("../entities/SendTransactions");
 const HELIOS = new Helios();
-const MessageUtil = require('../util/Discord/Message');
+const MessageUtil = require('../util/Discord/message');
 const MESSAGEUTIL = new MessageUtil();
 const UserInfoController = require('../controllers/userinfo.controller');
 const USERINFO = new UserInfoController();
