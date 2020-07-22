@@ -1,7 +1,7 @@
 require('dotenv').config();
 const envConfig = process.env;
 const UserInfoDao = require("../dao/user.info.dao");
-const Helios = require("../middleware/helios");
+const Helios = require("../middleware/Helios");
 const USERINFODAO = new UserInfoDao();
 const HELIOS = new Helios();
 

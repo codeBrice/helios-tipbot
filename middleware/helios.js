@@ -1,7 +1,7 @@
 const Web3 = require('helios-web3');
 const formatters =  require('web3-core-helpers');
-const Account = require('../entities/account');
-const Transaction = require('../entities/transaction');
+const Account = require('../entities/Account');
+const Transaction = require('../entities/Transaction');
 /*import { HlsUtils } from '../utils/hls-utils';
 import { promise } from 'protractor'; */
 
