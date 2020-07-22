@@ -106,6 +106,7 @@ class Tip {
                                             msg.author.send( msgs.general_transaction_fail );
                                             MESSAGEUTIL.reaction_fail( msg );
                                             logger.error( error );
+                                            return;
                                         }
                                     }).catch( error => {
                                         if( error.message.includes('10 seconds') ) {
@@ -116,6 +117,7 @@ class Tip {
                                         msg.author.send( msgs.general_transaction_fail )
                                         MESSAGEUTIL.reaction_fail( msg );
                                         logger.error( error );
+                                        return;
                                     });
                                 }
                             });
