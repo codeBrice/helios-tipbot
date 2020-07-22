@@ -15,37 +15,37 @@ class Command {
         if ( msg.content.substring(0,1) == envConfig.ALIASCOMMAND ){
             switch ( global.ctx.args[0] ) {
                 case 'register':
-                    ACCOUNT.generateAccount( msg );
+                    await ACCOUNT.generateAccount( msg );
                     break;
                 case 't':
                 case 'thls':
                 case 'tip':
-                    TIP.tip( msg , false );
+                    await TIP.tip( msg , false );
                     break;
                 case 'tipsplit':
                 case 'tsplit':
                 case 'ts':
-                    TIP.tip( msg , true );
+                    await TIP.tip( msg , true );
                     break;
                 case 'privatekey':
-                    ACCOUNT.getPrivateKey( msg );
+                    await ACCOUNT.getPrivateKey( msg );
                     break;
                 case 'balance':
                 case 'b':
                 case 'bal':
-                    ACCOUNT.getBalance( msg );
+                    await ACCOUNT.getBalance( msg );
                     break;
                 case 'wallet':
-                    ACCOUNT.getWallet( msg);
+                    await ACCOUNT.getWallet( msg);
                     break;
                 case 'withdraw':
-                    ACCOUNT.withdraw( msg );
+                    await ACCOUNT.withdraw( msg );
                     break;
                 case 'rain':
-                    RAIN.rain( msg );
+                    await RAIN.rain( msg );
                     break;
                 case 'help':
-                    msg.author.send( MESSAGEUTIL.msg_embed_help() );
+                    await msg.author.send( MESSAGEUTIL.msg_embed_help() );
                     MESSAGEUTIL.reaction_dm( msg );
                     break;
                 default:

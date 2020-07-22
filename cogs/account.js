@@ -128,23 +128,41 @@ class Account {
                 })
                 userInfo.then( async userInfoData => {
                     if( userInfoData ) {
-                        let tx = [];
-                        let transactionEntitie = new SendTransaction();
-                        transactionEntitie.from = userInfoData.wallet;
-                        transactionEntitie.to = global.ctx.args[2];
-                        transactionEntitie.gasPrice = await HELIOS.toWei(String(await HELIOS.getGasPrice()));
-                        transactionEntitie.gas = envConfig.GAS;
-                        transactionEntitie.value = await HELIOS.toWeiEther((String(amount)));
-                        tx.push( transactionEntitie );
-                        const sendTx = await new Promise( ( resolve, reject ) => {
-                            resolve( TRANSACTIONCONTROLLER.sendTransaction( tx , userInfoData.keystore_wallet) ) 
-                        })
-                        if ( !sendTx.length ) {
-                            msg.author.send( msgs.error_withdraw + envConfig.ALIASCOMMAND + 'withdraw 100 0x00000' );
-                            logger.error( error );
-                        } else {
-                            msg.author.send(MESSAGEUTIL.msg_embed('Withdraw process', msgs.withdraw_success)); 
-                        }
+                        const getTotalAmountWithGas = new Promise( (resolve, reject) => {
+                            const userInfo = userInfoController.getGasPriceSumAmount( amount );
+                            resolve( userInfo );
+                        });
+        
+                        getTotalAmountWithGas.then( getTotalAmountWithGas => {
+                            const userInfoAuthorBalance = new Promise( (resolve, reject) => {
+                                const userInfoAuthor = userInfoController.getBalance( msg.author.id );
+                                resolve( userInfoAuthor );
+                            });
+                            userInfoAuthorBalance.then( async userInfoAuthorBalance => {
+                                if( getTotalAmountWithGas > userInfoAuthorBalance ) {
+                                    msg.author.send( msgs.amount_gas_error + ', remember to have enough gas for the transaction.');
+                                    MESSAGEUTIL.reaction_fail( msg );
+                                    return;
+                                }
+                                let tx = [];
+                                let transactionEntitie = new SendTransaction();
+                                transactionEntitie.from = userInfoData.wallet;
+                                transactionEntitie.to = global.ctx.args[2];
+                                transactionEntitie.gasPrice = await HELIOS.toWei(String(await HELIOS.getGasPrice()));
+                                transactionEntitie.gas = envConfig.GAS;
+                                transactionEntitie.value = await HELIOS.toWeiEther((String(amount)));
+                                tx.push( transactionEntitie );
+                                const sendTx = await new Promise( ( resolve, reject ) => {
+                                    resolve( TRANSACTIONCONTROLLER.sendTransaction( tx , userInfoData.keystore_wallet) ) 
+                                })
+                                if ( !sendTx.length ) {
+                                    msg.author.send( msgs.error_withdraw + envConfig.ALIASCOMMAND + 'withdraw 100 0x00000' );
+                                    logger.error( error );
+                                } else {
+                                    msg.author.send(MESSAGEUTIL.msg_embed('Withdraw process', msgs.withdraw_success)); 
+                                }
+                            });
+                        });
                     }
                 }).catch( error => {
                     msg.author.send( msgs.error_withdraw + envConfig.ALIASCOMMAND + 'withdraw 100 0x00000' );

@@ -19,5 +19,6 @@
     "rain_error": "An error has occurred in the rain.",
     "rain_inactive": "There are not enough active users.",
     "min_rain": "Rain below the minimum allowed",
-    "max_rain": "The rain is much higher for the maximum allowed"
+    "max_rain": "The rain is much higher for the maximum allowed",
+    "amount_gas_error": "You are trying to withdraw a higher sum than your balance"
 }
