@@ -12,7 +12,7 @@ const MESSAGEUTIL = new MessageUtil();
 const TransactionController = require('../controllers/transactions.controller');
 const TRANSACTIONCONTROLLER = new TransactionController();
 const SendTransaction = require('../entities/SendTransactions');
-const Helios = require('../middleware/Helios');
+const Helios = require('../middleware/helios');
 const HELIOS = new Helios();
 
 class Account {

@@ -2,7 +2,7 @@ require('dotenv').config();
 const envConfig = process.env;
 const TransactionDao = require('../dao/transaction.dao');
 const TRANSACTIONDAO = new TransactionDao();
-const Helios = require('../middleware/Helios');
+const Helios = require('../middleware/helios');
 const HELIOS = new Helios();
 const moment = require("moment");
 const Transaction = require('../entities/Transaction');
