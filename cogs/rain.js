@@ -21,9 +21,14 @@ class Rain {
             if ( UTIL.isDmChannel( msg.channel.type ) )
                 return;
 
-            let getActiveUsers = await this.getActiveUser();
+            let isQueue = false;
+            let getActiveUsers = await this.getActiveUser( msg );
 
-            getActiveUsers = getActiveUsers.filter( active => active.user_discord_id != msg.author.id)
+            getActiveUsers = getActiveUsers.filter( active => active.user_discord_id != msg.author.id);
+
+            if ( getReceive || getTip ) {
+                isQueue = true;
+            }
             if ( getActiveUsers.length < envConfig.RAIN_MIN_ACTIVE_COUNT ) {
                 msg.author.send( msgs.rain_inactive )
                 MESSAGEUTIL.reaction_fail( msg );
@@ -57,7 +62,7 @@ class Rain {
                     resolve( userInfoAuthor );
                 });
                 userInfoAuthorBalance.then( async userInfoAuthorBalance => {
-                    if( getTotalAmountWithGas > userInfoAuthorBalance ) {
+                    if( getTotalAmountWithGas >= userInfoAuthorBalance ) {
                         msg.author.send( msgs.insufficient_balance + ', remember to have enough gas for the transaction.');
                         MESSAGEUTIL.reaction_fail( msg );
                         return;
@@ -69,6 +74,34 @@ class Rain {
                     });
                     amount = amount/getActiveUsers.length;
                     txs = await UTIL.arrayTransaction( msg , getActiveUsers, userInfoSend , amount );
+                    let isQueue = false;
+                    for ( let tx  of txs ) {
+                        if ( !isQueue ) {
+                            let getReceive = await new Promise( ( resolve, reject ) => {
+                                return global.clientRedis.get('receive:'+tx.user_discord_id_receive, async function(err, receive) { 
+                                    resolve(receive) ;
+                                });
+                            });
+                            let getTip = await new Promise( ( resolve, reject ) => {
+                                return global.clientRedis.get('tip:'+tx.user_discord_id_receive, async function(err, tip) { 
+                                    resolve(tip) ;
+                                });
+                            });
+
+                            if ( getReceive || getTip ) {
+                                isQueue = true;;
+                            }
+                        } else {
+                            break;
+                        }
+                    }
+
+                    if ( isQueue ) {
+                        await TRANSACTIONQUEUECONTROLLER.create( txs , msg , false, true );
+                        MESSAGEUTIL.reaction_transaction_queue( msg );
+                        return;
+                    }
+
                     const transaction = new Promise( (resolve, reject) => {
                         const sendingTx = TRANSACTION.sendTransaction( txs , userInfoSend.keystore_wallet);
                         resolve( sendingTx );
@@ -80,7 +113,7 @@ class Rain {
                                     const getUser = USERINFOCONTROLLER.getUser( receive.user_discord_id_receive );
                                     resolve( getUser );
                                 });
-                                let receiveTx = await TRANSACTION.receiveTransaction( receive, userInfoReceive.keystore_wallet, true , userInfoSend.id, receive.user_id);
+                                let receiveTx = await TRANSACTION.receiveTransaction( receive, userInfoReceive.keystore_wallet, true , receive.user_id_send, receive.user_id_receive);
                                 if ( receiveTx.length > 0  ) {
                                     global.client.fetchUser( receive.user_discord_id_receive , false ).then(user => {
                                         user.send(MESSAGEUTIL.msg_embed('Rain receive',
@@ -121,16 +154,16 @@ class Rain {
 
             global.clientRedis.get('activity:'+msg.author.id, async function(err, activity) {
                 if( activity == null ) {
-                    global.clientRedis.set('activity:'+msg.author.id, JSON.stringify({
+                    global.clientRedis.set('activity:'+msg.author.id+msg.guild.id, JSON.stringify({
                         'user_id': msg.author.id,
-                        'last_msg': moment().utc().add(-4, 'hours').toDate(),
+                        'last_msg': moment().utc().toDate(),
                         'msg_count': 1,
                     }));
                     global.clientRedis.expire('activity:'+msg.author.id , 1800);
                 } else {
                     //activity is the object for user active
                     activity = JSON.parse( activity );
-                    let seconds = moment.duration(moment().utc().add(-4,'hours').diff(activity.last_msg)).asSeconds();
+                    let seconds = moment.duration(moment().utc().diff(activity.last_msg)).asSeconds();
                     if ( 90 > seconds)
                         return
 
@@ -138,18 +171,18 @@ class Rain {
                         if ( activity.msg_count > 1 )
                             activity.msg_count -= 1;
 
-                        activity.last_msg = moment().utc().add(-4, 'hours').toDate();
-                        global.clientRedis.set( 'activity:'+msg.author.id, JSON.stringify(activity) );
+                        activity.last_msg = moment().utc().toDate();
+                        global.clientRedis.set( 'activity:'+msg.author.id+msg.guild.id, JSON.stringify(activity) );
                         global.clientRedis.expire( 'activity:'+msg.author.id , 1800 );
                     } else {
                         if ( activity.msg_count <= parseInt(envConfig.RAIN_MSG_REQUIREMENT)*2 ) {
                             activity.msg_count += 1;
-                            activity.last_msg = moment().utc().add(-4, 'hours').toDate();
-                            global.clientRedis.set( 'activity:'+msg.author.id, JSON.stringify(activity) );
+                            activity.last_msg = moment().utc().toDate();
+                            global.clientRedis.set( 'activity:'+msg.author.id+msg.guild.id, JSON.stringify(activity) );
                             global.clientRedis.expire( 'activity:'+msg.author.id , 1800 );
                         } else {
-                            activity.last_msg = moment().utc().add(-4, 'hours').toDate();
-                            global.clientRedis.set( 'activity:'+msg.author.id, JSON.stringify(activity) );
+                            activity.last_msg = moment().utc().toDate();
+                            global.clientRedis.set( 'activity:'+msg.author.id+msg.guild.id, JSON.stringify(activity) );
                             global.clientRedis.expire( 'activity:'+msg.author.id , 1800 );
                         }
                     } 
@@ -160,7 +193,7 @@ class Rain {
         }
     }
 
-    async getActiveUser() {
+    async getActiveUser( msg ) {
         try {
             let activeUser = [];
             const allUser = await new Promise( ( resolve, reject ) => {
@@ -168,7 +201,7 @@ class Rain {
             });
             for(let i = 0; i < allUser.length; i ++ ) {
                 let getActivity = await new Promise( ( resolve, reject ) => {
-                    return global.clientRedis.get('activity:'+allUser[i].user_discord_id, async function(err, activity) { 
+                    return global.clientRedis.get('activity:'+allUser[i].user_discord_id+msg.guild.id, async function(err, activity) { 
                         resolve(activity) ;
                     });
                 });

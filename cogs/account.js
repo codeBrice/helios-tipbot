@@ -14,6 +14,8 @@ const TRANSACTIONCONTROLLER = new TransactionController();
 const SendTransaction = require('../entities/SendTransactions');
 const Helios = require('../middleware/helios');
 const HELIOS = new Helios();
+const TransactionQueueController = require('../controllers/transaction.queue.controller');
+const TRANSACTIONQUEUECONTROLLER = new TransactionQueueController();
 
 class Account {
     async generateAccount( msg ){
@@ -122,7 +124,6 @@ class Account {
                     msg.author.send( msgs.invalid_command + ', the helios amount is not numeric. ' + envConfig.ALIASCOMMAND + 'withdraw 100 0x00000');
                     return;
                 }
-    
                 const userInfo = new Promise( ( resolve, reject ) => {
                     resolve( userInfoController.getUser( msg.author.id ) );
                 })
@@ -151,10 +152,28 @@ class Account {
                                 transactionEntitie.gasPrice = await HELIOS.toWei(String(await HELIOS.getGasPrice()));
                                 transactionEntitie.gas = envConfig.GAS;
                                 transactionEntitie.value = await HELIOS.toWeiEther((String(amount)));
+                                transactionEntitie.keystore_wallet = userInfoData.keystore_wallet;
                                 tx.push( transactionEntitie );
+                                let getReceive = await new Promise( ( resolve, reject ) => {
+                                    return global.clientRedis.get('receive:'+msg.author.id, async function(err, receive) { 
+                                        resolve(receive) ;
+                                    });
+                                });
+                                let getTip = await new Promise( ( resolve, reject ) => {
+                                    return global.clientRedis.get('tip:'+msg.author.id, async function(err, tip) { 
+                                        resolve(tip) ;
+                                    });
+                                });
+                                if ( getReceive || getTip) {
+                                    await TRANSACTIONQUEUECONTROLLER.create( tx , msg , false , false);
+                                    MESSAGEUTIL.reaction_transaction_queue( msg );
+                                    return;
+                                }
                                 const sendTx = await new Promise( ( resolve, reject ) => {
                                     resolve( TRANSACTIONCONTROLLER.sendTransaction( tx , userInfoData.keystore_wallet) ) 
                                 })
+                                global.clientRedis.set( 'tip:'+msg.author.id, msg.author.id );
+                                global.clientRedis.expire('tip:'+msg.author.id, 10);
                                 if ( !sendTx.length ) {
                                     msg.author.send( msgs.error_withdraw + envConfig.ALIASCOMMAND + 'withdraw 100 0x00000' );
                                     logger.error( error );
