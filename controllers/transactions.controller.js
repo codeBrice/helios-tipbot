@@ -21,9 +21,27 @@ class TransactionController {
     }
 
     async receiveTransaction( receive, keystore, isTip = false, user_id_send, user_id_receive ){
+        
+        let getReceive = await new Promise( ( resolve, reject ) => {
+            return global.clientRedis.get('receive:'+user_id_receive, async function(err, receive) { 
+                resolve(receive) ;
+            });
+        });
+        let getTip = await new Promise( ( resolve, reject ) => {
+            return global.clientRedis.get('tip:'+user_id_receive, async function(err, tip) { 
+                resolve(tip) ;
+            });
+        });
+
+        if ( getReceive || getTip ) {
+            return;
+        }
+
         const privateKey = await HELIOS.jsonToAccount( keystore , envConfig.ENCRYPT_KEYSTORE );
         const receiveTxs = await HELIOS.getReceivableTransactions( receive.to, privateKey.privateKey );
         if ( receiveTxs.length ) {
+            global.clientRedis.set( 'receive:'+user_id_receive, user_id_receive );
+            global.clientRedis.expire('receive:'+user_id_receive, 10);
             let transaction = new Transaction();
             transaction.send_status = true;
             transaction.date = moment().utc().toDate();

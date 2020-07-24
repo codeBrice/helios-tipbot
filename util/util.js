@@ -38,11 +38,14 @@ class Util {
 
             transactionEntitie.from = userInfoSend.wallet;
             transactionEntitie.to = userInfoReceive.wallet;
+            transactionEntitie.keystore_wallet = userInfoSend.keystore_wallet;
+            transactionEntitie.user_discord_id_send = userInfoSend.user_discord_id;
+            transactionEntitie.user_id_send = userInfoSend.id;
             transactionEntitie.gasPrice = await HELIOS.toWei(String(await HELIOS.getGasPrice()));
             transactionEntitie.gas = envConfig.GAS;
             transactionEntitie.value = await HELIOS.toWeiEther((String(amount)));
             transactionEntitie.user_discord_id_receive = userInfoReceive.user_discord_id;
-            transactionEntitie.user_id = userInfoReceive.id;
+            transactionEntitie.user_id_receive = userInfoReceive.id;
             transactionEntitie.helios_amount = amount;
             txs.push( transactionEntitie );
         }

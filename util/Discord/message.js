@@ -26,6 +26,18 @@ class Message {
         await msg.react('💦');
     }
 
+    async reaction_transaction_queue ( msg ) {
+        await msg.react('🕒');
+    }
+
+    async reaction_complete_withdraw_queue( msg ) {
+        await msg.react('🇸');
+        await msg.react('🇪');
+        await msg.react('🇳');
+        await msg.react('🇩');
+        await msg.react('✅');
+    }
+
     msg_embed( title, description, isTip = false , url = ''){
         // inside a command, event listener, etc.
         let exampleEmbed = new Discord.RichEmbed()
