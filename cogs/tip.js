@@ -93,8 +93,20 @@ class Tip {
                                         });
                                     });
 
-                                    if ( getReceive || getTip ) {
-                                        isQueue = true;;
+                                    let getReceiveSend = await new Promise( ( resolve, reject ) => {
+                                        return global.clientRedis.get('receive:'+msg.author.id, function(err, receive) { 
+                                            resolve(receive) ;
+                                        });
+                                    });
+
+                                    let getTipSend = await new Promise( ( resolve, reject ) => {
+                                        return global.clientRedis.get('tip:'+msg.author.id, function(err, tip) { 
+                                            resolve(tip) ;
+                                        });
+                                    });
+
+                                    if ( getReceive || getTip || getReceiveSend || getTipSend) {
+                                        isQueue = true;
                                     }
                                 } else {
                                     break;
