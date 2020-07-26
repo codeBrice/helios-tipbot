@@ -99,13 +99,7 @@ class Tip {
                                         });
                                     });
 
-                                    let getTipSend = await new Promise( ( resolve, reject ) => {
-                                        return global.clientRedis.get('tip:'+msg.author.id, function(err, tip) { 
-                                            resolve(tip) ;
-                                        });
-                                    });
-
-                                    if ( getReceive || getTip || getReceiveSend || getTipSend) {
+                                    if ( getReceive || getTip || getReceiveSend ) {
                                         isQueue = true;
                                     }
                                 } else {
