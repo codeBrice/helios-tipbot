@@ -7,7 +7,7 @@ class TransactionQueueDao {
 
     async create( txs, isProcessed, date, msg_discord, isTip, isRain ){
         try {
-            return transaction_queue.create({transactions: txs, isProcessed: isProcessed, date: date, msg_discord, isTip: isTip, isRain: isRain, isProcessedFailed: false});
+            return transaction_queue.create({transactions: txs, isProcessed: isProcessed, date: date, msg_discord, isTip: isTip, isRain: isRain, isProcessedFailed: false, attemps: 0});
         } catch (error) {
             logger.error( error );
         }

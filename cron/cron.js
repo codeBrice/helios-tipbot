@@ -85,17 +85,17 @@ exports.fnRunCrons = function () {
                             resolve(tip) ;
                         });
                     });
+                    let msg_discord = JSON.parse(transactionQueue.msg_discord);
+                    msg = await new Promise( ( resolve, reject ) => {
+                        return client.channels.get(msg_discord.channel_id).fetchMessage(msg_discord.message_id).then(msg => { 
+                            resolve( msg );
+                         });
+                    });
                     if ( getReceiveUserSend || getTipUserSend || getReceiveUserReceive ||getTipUserReceive ) {
                         queue += 1;
                     } else {
                         transactionQueue = getQueue[queue];
                         transactions = JSON.parse(transactionQueue.transactions);
-                        let msg_discord = JSON.parse(transactionQueue.msg_discord);
-                        msg = await new Promise( ( resolve, reject ) => {
-                            return client.channels.get(msg_discord.channel_id).fetchMessage(msg_discord.message_id).then(async msg => { 
-                                resolve( msg );
-                             });
-                        });
                         break;
                     }
                 }
@@ -107,6 +107,7 @@ exports.fnRunCrons = function () {
                     if ( tx.length > 0 ) {
                         if ( !transactionQueue.isRain && !transactionQueue.isTip ) {
                             transactionQueue.isProcessed = true;
+                            transactionQueue.attemps += 1;
                             await TRANSACTIONQUEUECONTROLLER.update( transactionQueue.dataValues );
                             msg.author.send(MESSAGEUTIL.msg_embed('Withdraw process', msgs.withdraw_success));
                             MESSAGEUTIL.reaction_complete_tip( msg );
@@ -124,6 +125,7 @@ exports.fnRunCrons = function () {
                                 global.clientRedis.set( 'receive:'+receive.user_discord_id_receive, receive.user_discord_id_receive );
                                 global.clientRedis.expire('receive:'+receive.user_discord_id_receive, 10);
                                 transactionQueue.isProcessed = true;
+                                transactionQueue.attemps += 1;
                                 await TRANSACTIONQUEUECONTROLLER.update( transactionQueue.dataValues );
                                 global.client.fetchUser( receive.user_discord_id_receive , false ).then(async user => {
                                     let title = ( transactionQueue.isTip ? 'Tip receive': 'Rain receive');
@@ -136,15 +138,27 @@ exports.fnRunCrons = function () {
                             }
                         }
                     } else {
-                        transactionQueue.isProcessed = false;
-                        transactionQueue.isProcessedFailed = true;
+                        transactionQueue.attemps += 1;
+                        if ( transactionQueue.attemps == 3 ) {
+                            transactionQueue.isProcessed = true;
+                            transactionQueue.isProcessedFailed = true;
+                        } else {
+                            transactionQueue.isProcessed = false;
+                        }
                         await TRANSACTIONQUEUECONTROLLER.update( transactionQueue.dataValues );
                         logger.error( error );
                         return;
                     }
-                }).catch( error => {
-                    transactionQueue.isProcessedFailed = true;
-                    transactionQueue.isProcessed = false;
+                }).catch( async error => {
+                    transactionQueue.attemps += 1;
+                    if ( transactionQueue.attemps == 5 ) {
+                        transactionQueue.isProcessed = true;
+                        transactionQueue.isProcessedFailed = true;
+                        await msg.clearReactions();
+                        msg.author.send(msgs.general_transaction_fail);
+                    } else {
+                        transactionQueue.isProcessed = false;
+                    }
                     TRANSACTIONQUEUECONTROLLER.update( transactionQueue.dataValues );
                     logger.error( error );
                     return;

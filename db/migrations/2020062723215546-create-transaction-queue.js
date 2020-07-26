@@ -34,7 +34,11 @@ module.exports = {
       },
       isProcessedFailed: {
         type: Sequelize.BOOLEAN,
-        allowNull:false
+        allowNull: false
+      },
+      attemps: {
+        type: Sequelize.INTEGER,
+        allowNull: false
       }
     });
   },
