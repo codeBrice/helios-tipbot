@@ -24,9 +24,9 @@ class Util {
     async arrayTransaction( msg , user_tip_id_list, userInfoSend, amount ){
         let txs = [];
         let userInfoReceive;
-        global.clientRedis.set( 'tip:'+userInfoSend.user_discord_id, userInfoSend.user_discord_id );
-        global.clientRedis.expire('tip:'+userInfoSend.user_discord_id, 10);
         for( let user of user_tip_id_list) {
+            global.clientRedis.set( 'tip:'+userInfoSend.user_discord_id, userInfoSend.user_discord_id );
+        global.clientRedis.expire('tip:'+userInfoSend.user_discord_id, 20);
             let transactionEntitie = new SendTransaction();
             userInfoReceive = await new Promise((resolve, reject) => {
                 const getUser = USERINFO.getUser( user.user_discord_id );
