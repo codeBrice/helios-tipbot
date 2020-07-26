@@ -21,14 +21,10 @@ class Rain {
             if ( UTIL.isDmChannel( msg.channel.type ) )
                 return;
 
-            let isQueue = false;
             let getActiveUsers = await this.getActiveUser( msg );
 
             getActiveUsers = getActiveUsers.filter( active => active.user_discord_id != msg.author.id);
 
-            if ( getReceive || getTip ) {
-                isQueue = true;
-            }
             if ( getActiveUsers.length < envConfig.RAIN_MIN_ACTIVE_COUNT ) {
                 msg.author.send( msgs.rain_inactive )
                 MESSAGEUTIL.reaction_fail( msg );
@@ -56,7 +52,7 @@ class Rain {
                     const userInfo = USERINFOCONTROLLER.getGasPriceSumAmount( amount );
                     resolve( userInfo );
                 });
-
+                let txs = [];
                 const userInfoAuthorBalance = new Promise( (resolve, reject) => {
                     const userInfoAuthor = USERINFOCONTROLLER.getBalance( msg.author.id );
                     resolve( userInfoAuthor );
@@ -67,7 +63,6 @@ class Rain {
                         MESSAGEUTIL.reaction_fail( msg );
                         return;
                     }
-                    let txs = [];
                     const userInfoSend = await new Promise( ( resolve, reject ) => {
                         const getUser = USERINFOCONTROLLER.getUser( msg.author.id );
                         resolve( getUser)
@@ -115,6 +110,8 @@ class Rain {
                                 });
                                 let receiveTx = await TRANSACTION.receiveTransaction( receive, userInfoReceive.keystore_wallet, true , receive.user_id_send, receive.user_id_receive);
                                 if ( receiveTx.length > 0  ) {
+                                    global.clientRedis.set( 'receive:'+receive.user_discord_id_receive, receive.user_discord_id_receive );
+                                    global.clientRedis.expire('receive:'+receive.user_discord_id_receive, 10);
                                     global.client.fetchUser( receive.user_discord_id_receive , false ).then(user => {
                                         user.send(MESSAGEUTIL.msg_embed('Rain receive',
                                         'The user'+ msg.author + ' rain you `' + amount +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) ); 
@@ -123,19 +120,14 @@ class Rain {
                                 }
                             }
                         } else {
-                            msg.author.send( msgs.general_transaction_fail );
-                            MESSAGEUTIL.reaction_fail( msg );
+                            await TRANSACTIONQUEUECONTROLLER.create( txs , msg , false, true );
+                            MESSAGEUTIL.reaction_transaction_queue( msg );
                             logger.error( error );
                             return;
                         }
-                    }).catch( error => {
-                        if( error.message.includes('10 seconds') ) {
-                            msg.author.send( msgs.limit_exceed );
-                            MESSAGEUTIL.reaction_fail( msg );
-                            return;
-                        }
-                        msg.author.send( msgs.rain_error )
-                        MESSAGEUTIL.reaction_fail( msg );
+                    }).catch( async error => {
+                        await TRANSACTIONQUEUECONTROLLER.create( txs , msg , false, true );
+                        MESSAGEUTIL.reaction_transaction_queue( msg );
                         logger.error( error );
                         return;
                     });

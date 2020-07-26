@@ -42,7 +42,7 @@ class Tip {
                     const userInfo = USERINFO.getGasPriceSumAmount( amount );
                     resolve( userInfo );
                 });
-
+                let txs = [];
                 getTotalAmountWithGas.then( getTotalAmountWithGas => {
                     const userInfoAuthorBalance = new Promise( (resolve, reject) => {
                         const userInfoAuthor = USERINFO.getBalance( msg.author.id );
@@ -70,112 +70,89 @@ class Tip {
                             if ( isSplit )
                                 amount = amount / user_tip_id_list.length;
                             
-                            //verified if user has tip the last 10seconds
-                            let getReceive = await new Promise( ( resolve, reject ) => {
-                                return global.clientRedis.get('receive:'+msg.author.id, async function(err, receive) { 
-                                    resolve(receive) ;
-                                });
+                            const userInfoSend = await new Promise( ( resolve, reject ) => {
+                                const getUser = USERINFO.getUser( msg.author.id );
+                                resolve( getUser)
                             });
-                            let getTip = await new Promise( ( resolve, reject ) => {
-                                return global.clientRedis.get('tip:'+msg.author.id, async function(err, tip) { 
-                                    resolve(tip) ;
-                                });
-                            });
-                            if( getReceive || getTip ) {
-                                msg.author.send( msgs.limit_exceed );
-                                MESSAGEUTIL.reaction_fail( msg );
-                                return;
-                            } else {
-                                global.clientRedis.set( 'tip:'+msg.author.id, msg.author.id );
-                                global.clientRedis.expire('tip:'+msg.author.id, 10);
-                                let txs = [];
-                                const userInfoSend = await new Promise( ( resolve, reject ) => {
-                                    const getUser = USERINFO.getUser( msg.author.id );
-                                    resolve( getUser)
-                                });
-                                //transaction object
-                                txs = await UTIL.arrayTransaction( msg , user_tip_id_list, userInfoSend , amount );
-                                
-                                let isQueue = false;
-                                for ( let tx  of txs ) {
-                                    if ( !isQueue ) {
-                                        let getReceive = await new Promise( ( resolve, reject ) => {
-                                            return global.clientRedis.get('receive:'+tx.user_discord_id_receive, async function(err, receive) { 
-                                                resolve(receive) ;
-                                            });
+                            //transaction object
+                            txs = await UTIL.arrayTransaction( msg , user_tip_id_list, userInfoSend , amount );
+                            
+                            let isQueue = false;
+                            let getReceive;
+                            let getTip;
+                            for ( let tx  of txs ) {
+                                if ( !isQueue ) {
+                                    getReceive = await new Promise( ( resolve, reject ) => {
+                                        return global.clientRedis.get('receive:'+tx.user_discord_id_receive, function(err, receive) { 
+                                            resolve(receive) ;
                                         });
-                                        let getTip = await new Promise( ( resolve, reject ) => {
-                                            return global.clientRedis.get('tip:'+tx.user_discord_id_receive, async function(err, tip) { 
-                                                resolve(tip) ;
-                                            });
+                                    });
+                                    getTip = await new Promise( ( resolve, reject ) => {
+                                        return global.clientRedis.get('tip:'+tx.user_discord_id_receive, function(err, tip) { 
+                                            resolve(tip) ;
                                         });
+                                    });
 
-                                        if ( getReceive || getTip ) {
-                                            isQueue = true;;
-                                        }
-                                    } else {
-                                        break;
+                                    if ( getReceive || getTip ) {
+                                        isQueue = true;;
                                     }
+                                } else {
+                                    break;
                                 }
-                                if ( isQueue ) {
+                            }
+                            if ( isQueue ) {
+                                await TRANSACTIONQUEUECONTROLLER.create( txs , msg , true , false);
+                                MESSAGEUTIL.reaction_transaction_queue( msg );
+                                return;
+                            }
+
+                            const transaction = new Promise( (resolve, reject) => {
+                                const sendingTx = TRANSACTION.sendTransaction( txs , userInfoSend.keystore_wallet);
+                                resolve( sendingTx );
+                            });
+                            transaction.then( async tx => {
+                                if ( tx.length > 0 ) {
+                                    for ( let receive of tx ) {
+                                        let userInfoReceive = await new Promise((resolve, reject) => {
+                                            const getUser = USERINFO.getUser( receive.user_discord_id_receive );
+                                            resolve( getUser );
+                                        });
+                                        let receiveTx = await TRANSACTION.receiveTransaction( receive, userInfoReceive.keystore_wallet, true , receive.user_id_send, receive.user_id_receive);
+                                        if ( receiveTx.length > 0  ) {
+                                            global.clientRedis.set( 'receive:'+receive.user_discord_id_receive, receive.user_discord_id_receive );
+                                            global.clientRedis.expire('receive:'+receive.user_discord_id_receive, 10);
+                                            global.client.fetchUser( receive.user_discord_id_receive , false ).then(user => {
+                                                user.send(MESSAGEUTIL.msg_embed('Tip receive',
+                                                'The user'+ msg.author + ' tip you `' + amount +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) ); 
+                                                MESSAGEUTIL.reaction_complete_tip( msg );
+                                            });
+                                        }
+                                    }
+                                } else {
                                     await TRANSACTIONQUEUECONTROLLER.create( txs , msg , true , false);
                                     MESSAGEUTIL.reaction_transaction_queue( msg );
-                                    return;
-                                }
-
-                                const transaction = new Promise( (resolve, reject) => {
-                                    const sendingTx = TRANSACTION.sendTransaction( txs , userInfoSend.keystore_wallet);
-                                    resolve( sendingTx );
-                                });
-                                transaction.then( async tx => {
-                                    if ( tx.length > 0 ) {
-                                        for ( let receive of tx ) {
-                                            let userInfoReceive = await new Promise((resolve, reject) => {
-                                                const getUser = USERINFO.getUser( receive.user_discord_id_receive );
-                                                resolve( getUser );
-                                            });
-                                            let receiveTx = await TRANSACTION.receiveTransaction( receive, userInfoReceive.keystore_wallet, true , receive.user_id_send, receive.user_id_receive);
-                                            if ( receiveTx.length > 0  ) {
-                                                global.clientRedis.set( 'receive:'+receive.user_discord_id_receive, receive.user_discord_id_receive );
-                                                global.clientRedis.expire('receive:'+receive.user_discord_id_receive, 10);
-                                                global.client.fetchUser( receive.user_discord_id_receive , false ).then(user => {
-                                                    user.send(MESSAGEUTIL.msg_embed('Tip receive',
-                                                    'The user'+ msg.author + ' tip you `' + amount +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) ); 
-                                                    MESSAGEUTIL.reaction_complete_tip( msg );
-                                                });
-                                            }
-                                        }
-                                    } else {
-                                        msg.author.send( msgs.general_transaction_fail );
-                                        MESSAGEUTIL.reaction_fail( msg );
-                                        logger.error( error );
-                                        return;
-                                    }
-                                }).catch( error => {
-                                    if( error.message.includes('10 seconds') ) {
-                                        msg.author.send( msgs.limit_exceed );
-                                        MESSAGEUTIL.reaction_fail( msg );
-                                        return;
-                                    }
-                                    msg.author.send( msgs.general_transaction_fail )
-                                    MESSAGEUTIL.reaction_fail( msg );
                                     logger.error( error );
                                     return;
-                                });
-                            }
+                                }
+                            }).catch( async error => {
+                                await TRANSACTIONQUEUECONTROLLER.create( txs , msg , true , false);
+                                MESSAGEUTIL.reaction_transaction_queue( msg );
+                                logger.error( error );
+                                return;
+                            });
                         } else {
                             msg.author.send( msgs.invalid_tip_count + ', ' + msgs.example_tip)
                             MESSAGEUTIL.reaction_fail( msg );
                             return;
                         }
-                    }).catch( error => {
-                        msg.author.send( msgs.general_transaction_fail )
-                        MESSAGEUTIL.reaction_fail( msg );
+                    }).catch( async error => {
+                        await TRANSACTIONQUEUECONTROLLER.create( txs , msg , true , false);
+                        MESSAGEUTIL.reaction_transaction_queue( msg );
                         logger.error( error );
                     });
-                }).catch( error => {
-                    logger.error( error );
-                    msg.author.send( msgs.general_transaction_fail )
+                }).catch( async error => {
+                    await TRANSACTIONQUEUECONTROLLER.create( txs , msg , true , false);
+                    MESSAGEUTIL.reaction_transaction_queue( msg );
                     MESSAGEUTIL.reaction_fail( msg );
                 });
             }

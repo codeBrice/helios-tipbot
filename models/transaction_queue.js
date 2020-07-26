@@ -28,6 +28,10 @@ module.exports = (sequelize, DataTypes) => {
     isProcessedFailed: {
       type: DataTypes.BOOLEAN,
       allowNull:false
+    },
+    attemps: {
+      type: DataTypes.INTEGER,
+      allowNull: false
     }
   }, {
     tableName: "tbl_transaction_queue",
