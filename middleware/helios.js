@@ -22,13 +22,13 @@ class Helios {
    * @returns  true : Successfully connected  or Error Failed to connect.
    */
   async connectToFirstAvailableNode() {
-    console.log(`connectToFirstAvailableNode`);
+    //console.log(`connectToFirstAvailableNode`);
     try {
       if (this.web3 && !(this.web3.currentProvider == null || !this.web3.currentProvider.connected)) {
         return true;
       } else {
         for (const node of this.availableNodes) {
-            console.log(`Connecting to node ${node}`);
+            //console.log(`Connecting to node ${node}`);
             this.web3 = new Web3(new Web3.providers.WebsocketProvider(node));
             // this.web3.extend(this.methods);
             // console.log(this.web3);
@@ -36,7 +36,7 @@ class Helios {
               const listen = await this.web3.eth.net.isListening();
               // await this.web3.eth.net.getPeerCount();
               if (this.isConnected() || listen) {
-                  console.log(`Successfully connected to ${node}`);
+                  //console.log(`Successfully connected to ${node}`);
                   return true;
               }
             } catch ( error ) {
