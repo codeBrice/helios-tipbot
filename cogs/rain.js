@@ -67,82 +67,47 @@ class Rain {
                         const getUser = USERINFOCONTROLLER.getUser( msg.author.id );
                         resolve( getUser)
                     });
+                    
                     amount = amount/getActiveUsers.length;
+
                     txs = await UTIL.arrayTransaction( msg , getActiveUsers, userInfoSend , amount );
-                    let isQueue = false;
-                    for ( let tx  of txs ) {
-                        if ( !isQueue ) {
-                            let getReceive = await new Promise( ( resolve, reject ) => {
-                                return global.clientRedis.get('receive:'+tx.user_discord_id_receive, async function(err, receive) { 
-                                    resolve(receive) ;
-                                });
-                            });
-                            let getTip = await new Promise( ( resolve, reject ) => {
-                                return global.clientRedis.get('tip:'+tx.user_discord_id_receive, async function(err, tip) { 
-                                    resolve(tip) ;
-                                });
-                            });
 
-                            let getReceiveSend = await new Promise( ( resolve, reject ) => {
-                                return global.clientRedis.get('receive:'+msg.author.id, function(err, receive) { 
-                                    resolve(receive) ;
-                                });
-                            });
-
-                            let getTipSend = await new Promise( ( resolve, reject ) => {
-                                return global.clientRedis.get('tip:'+msg.author.id, function(err, tip) { 
-                                    resolve(tip) ;
-                                });
-                            });
-
-                            if ( getReceive || getTip || getReceiveSend || getTipSend) {
-                                isQueue = true;
-                            }
-                        } else {
-                            break;
-                        }
-                    }
-
-                    if ( isQueue ) {
-                        await TRANSACTIONQUEUECONTROLLER.create( txs , msg , false, true );
-                        MESSAGEUTIL.reaction_transaction_queue( msg );
-                        return;
-                    }
-
-                    const transaction = new Promise( (resolve, reject) => {
-                        const sendingTx = TRANSACTION.sendTransaction( txs , userInfoSend.keystore_wallet);
-                        resolve( sendingTx );
-                    });
-                    transaction.then( async tx => {
-                        if ( tx.length > 0 ) {
-                            for ( let receive of tx ) {
-                                let userInfoReceive = await new Promise((resolve, reject) => {
-                                    const getUser = USERINFOCONTROLLER.getUser( receive.user_discord_id_receive );
-                                    resolve( getUser );
-                                });
-                                let receiveTx = await TRANSACTION.receiveTransaction( receive, userInfoReceive.keystore_wallet, true , receive.user_id_send, receive.user_id_receive);
-                                if ( receiveTx.length > 0  ) {
-                                    global.clientRedis.set( 'receive:'+receive.user_discord_id_receive, receive.user_discord_id_receive );
-                                    global.clientRedis.expire('receive:'+receive.user_discord_id_receive, 10);
-                                    global.client.fetchUser( receive.user_discord_id_receive , false ).then(user => {
-                                        user.send(MESSAGEUTIL.msg_embed('Rain receive',
-                                        'The user'+ msg.author + ' rain you `' + amount +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) ); 
+                    if ( txs.length > 0 ) {
+                        const transaction = new Promise( (resolve, reject) => {
+                            const sendingTx = TRANSACTION.sendTransaction( txs , userInfoSend.keystore_wallet);
+                            resolve( sendingTx );
+                        });
+                        transaction.then( async tx => {
+                            if ( tx.length > 0 ) {
+                                for ( let receive of tx ) {
+                                    let userInfoReceive = await new Promise((resolve, reject) => {
+                                        const getUser = USERINFOCONTROLLER.getUser( receive.user_discord_id_receive );
+                                        resolve( getUser );
                                     });
-                                    MESSAGEUTIL.reaction_complete_rain( msg );
+                                    let receiveTx = await TRANSACTION.receiveTransaction( receive, userInfoReceive.keystore_wallet, true , receive.user_id_send, receive.user_id_receive);
+                                    if ( receiveTx.length > 0  ) {
+                                        global.clientRedis.set( 'receive:'+receive.user_discord_id_receive, receive.user_discord_id_receive );
+                                        global.clientRedis.expire('receive:'+receive.user_discord_id_receive, 10);
+                                        global.client.fetchUser( receive.user_discord_id_receive , false ).then(user => {
+                                            user.send(MESSAGEUTIL.msg_embed('Rain receive',
+                                            'The user'+ msg.author + ' rain you `' + amount +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) ); 
+                                        });
+                                        MESSAGEUTIL.reaction_complete_rain( msg );
+                                    }
                                 }
+                            } else {
+                                await TRANSACTIONQUEUECONTROLLER.create( txs , msg , false, true );
+                                MESSAGEUTIL.reaction_transaction_queue( msg );
+                                logger.error( error );
+                                return;
                             }
-                        } else {
+                        }).catch( async error => {
                             await TRANSACTIONQUEUECONTROLLER.create( txs , msg , false, true );
                             MESSAGEUTIL.reaction_transaction_queue( msg );
                             logger.error( error );
                             return;
-                        }
-                    }).catch( async error => {
-                        await TRANSACTIONQUEUECONTROLLER.create( txs , msg , false, true );
-                        MESSAGEUTIL.reaction_transaction_queue( msg );
-                        logger.error( error );
-                        return;
-                    });
+                        });
+                    }
                 });
         } catch (error) {
             logger.error( error );
