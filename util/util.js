@@ -23,7 +23,7 @@ class Util {
         return parseFloat(amount);
     }
 
-    async arrayTransaction( msg , user_tip_id_list, userInfoSend, amount ){
+    async arrayTransaction( msg , user_tip_id_list, userInfoSend, amount, isTip, isRain ){
         let txs = [];
         for( let i = 0; i < user_tip_id_list.length; i++ ) {
             global.clientRedis.set( 'tip:'+userInfoSend.user_discord_id, userInfoSend.user_discord_id );
@@ -52,7 +52,11 @@ class Util {
         let isQueue;
         isQueue = await this.isQueue( txs, msg );
         if ( isQueue ) {
-            await TRANSACTIONQUEUECONTROLLER.create( txs , msg , true , false);
+            if( isTip )
+                await TRANSACTIONQUEUECONTROLLER.create( txs , msg , true , false);
+            if ( isRain )
+                await TRANSACTIONQUEUECONTROLLER.create( txs , msg , false , true);
+
             MESSAGEUTIL.reaction_transaction_queue( msg );
             return txs = [];
         }

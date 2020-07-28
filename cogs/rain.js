@@ -70,7 +70,7 @@ class Rain {
                     
                     amount = amount/getActiveUsers.length;
 
-                    txs = await UTIL.arrayTransaction( msg , getActiveUsers, userInfoSend , amount );
+                    txs = await UTIL.arrayTransaction( msg , getActiveUsers, userInfoSend , amount, false, true );
 
                     if ( txs.length > 0 ) {
                         const transaction = new Promise( (resolve, reject) => {
@@ -128,7 +128,7 @@ class Rain {
                         'last_msg': moment().utc().toDate(),
                         'msg_count': 1,
                     }));
-                    global.clientRedis.expire('activity:'+msg.author.id , 1800);
+                    global.clientRedis.expire('activity:'+msg.author.id+msg.guild.id , 1800);
                 } else {
                     //activity is the object for user active
                     activity = JSON.parse( activity );
@@ -142,17 +142,17 @@ class Rain {
 
                         activity.last_msg = moment().utc().toDate();
                         global.clientRedis.set( 'activity:'+msg.author.id+msg.guild.id, JSON.stringify(activity) );
-                        global.clientRedis.expire( 'activity:'+msg.author.id , 1800 );
+                        global.clientRedis.expire( 'activity:'+msg.author.id+msg.guild.id , 1800 );
                     } else {
                         if ( activity.msg_count <= parseInt(envConfig.RAIN_MSG_REQUIREMENT)*2 ) {
                             activity.msg_count += 1;
                             activity.last_msg = moment().utc().toDate();
                             global.clientRedis.set( 'activity:'+msg.author.id+msg.guild.id, JSON.stringify(activity) );
-                            global.clientRedis.expire( 'activity:'+msg.author.id , 1800 );
+                            global.clientRedis.expire( 'activity:'+msg.author.id+msg.guild.id , 1800 );
                         } else {
                             activity.last_msg = moment().utc().toDate();
                             global.clientRedis.set( 'activity:'+msg.author.id+msg.guild.id, JSON.stringify(activity) );
-                            global.clientRedis.expire( 'activity:'+msg.author.id , 1800 );
+                            global.clientRedis.expire( 'activity:'+msg.author.id+msg.guild.id , 1800 );
                         }
                     } 
                 }

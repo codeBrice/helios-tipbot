@@ -72,7 +72,7 @@ class Tip {
                             
                             const userInfoSend = await USERINFO.getUser( msg.author.id );
                             //transaction object
-                            txs = await UTIL.arrayTransaction( msg , user_tip_id_list, userInfoSend , amount );
+                            txs = await UTIL.arrayTransaction( msg , user_tip_id_list, userInfoSend , amount, true, false );
                             
                             if ( txs.length > 0 ) {
                                 const transaction = new Promise( (resolve, reject) => {
