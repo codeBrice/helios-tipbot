@@ -121,7 +121,7 @@ class Rain {
             if ( UTIL.isDmChannel( msg.channel.type ) || msg.content.length < 30 )
                 return;
 
-            global.clientRedis.get('activity:'+msg.author.id, async function(err, activity) {
+            global.clientRedis.get('activity:'+msg.author.id+msg.guild.id, async function(err, activity) {
                 if( activity == null ) {
                     global.clientRedis.set('activity:'+msg.author.id+msg.guild.id, JSON.stringify({
                         'user_id': msg.author.id,
