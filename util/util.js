@@ -49,22 +49,39 @@ class Util {
             transactionEntitie.helios_amount = amount;
             txs.push( transactionEntitie );
         }
+        let isQueue;
+        isQueue = await this.isQueue( txs, msg );
+        if ( isQueue ) {
+            await TRANSACTIONQUEUECONTROLLER.create( txs , msg , true , false);
+            MESSAGEUTIL.reaction_transaction_queue( msg );
+            return txs = [];
+        }
+        return txs;
+    }
+
+    async isQueue( txs , msg ) {
         let isQueue = false;
         let getReceive;
         let getTip;
+        let getReceiveSend
         for(let i = 0; i < txs.length; i++ ) {
             if ( !isQueue ) {
 
-                getReceive = global.clientRedis.get('receive:'+txs[i].user_discord_id_receive, function(err, receive) { 
-                    return receive;
+                getReceive = await new Promise( ( resolve, reject ) => {
+                    return global.clientRedis.get('receive:'+txs[i].user_discord_id_receive, function(err, receive) { 
+                        resolve(receive) ;
+                    });
+                });
+                getTip = await new Promise( ( resolve, reject ) => {
+                    return global.clientRedis.get('tip:'+txs[i].user_discord_id_receive, function(err, tip) { 
+                        resolve(tip) ;
+                    });
                 });
 
-                getTip = global.clientRedis.get('tip:'+txs[i].user_discord_id_receive, function(err, tip) { 
-                    return tip
-                });
-
-                let getReceiveSend = global.clientRedis.get('receive:'+msg.author.id, function(err, receive) { 
-                    return receive;
+                getReceiveSend = await new Promise( ( resolve, reject ) => {
+                    return global.clientRedis.get('receive:'+msg.author.id, function(err, receive) { 
+                        resolve(receive) ;
+                    });
                 });
 
                 if ( getReceive || getTip || getReceiveSend ) {
@@ -74,12 +91,7 @@ class Util {
                 break;
             }
         }
-        if ( isQueue ) {
-            await TRANSACTIONQUEUECONTROLLER.create( txs , msg , true , false);
-            MESSAGEUTIL.reaction_transaction_queue( msg );
-            return txs = [];
-        }
-        return txs;
+        return isQueue;
     }
 
 }
