@@ -55,7 +55,7 @@ exports.fnRunCrons = function () {
     }); 
     cronReceive.start();
 
-    let cronTransactionQueue = cron.job("0/10 * * * * *", async function(){
+    let cronTransactionQueue = cron.job("0/6 * * * * *", async function(){
         try {
             logger.info('Start transaction queue');
             const getQueue = await TRANSACTIONQUEUECONTROLLER.findAll();
@@ -65,17 +65,25 @@ exports.fnRunCrons = function () {
                 let transactions = JSON.parse(transactionQueue.transactions);
                 let msg;
                 for( let transaction of transactions ) {
-                    let getReceiveUserSend = global.clientRedis.get('receive:'+transaction.user_discord_id_send, async function(err, receive) { 
-                        return receive;
+                    let getReceiveUserSend = await new Promise( ( resolve, reject ) => {
+                        return global.clientRedis.get('receive:'+transaction.user_discord_id_send, async function(err, receive) { 
+                            resolve(receive) ;
+                        });
                     });
-                    let getTipUserSend = global.clientRedis.get('tip:'+transaction.user_discord_id_send, async function(err, tip) { 
-                        return tip;
+                    let getTipUserSend = await new Promise( ( resolve, reject ) => {
+                        return global.clientRedis.get('tip:'+transaction.user_discord_id_send, async function(err, tip) { 
+                            resolve(tip) ;
+                        });
                     });
-                    let getReceiveUserReceive = global.clientRedis.get('receive:'+transaction.user_discord_id_receive, async function(err, receive) { 
-                        return receive;
+                    let getReceiveUserReceive = await new Promise( ( resolve, reject ) => {
+                        return global.clientRedis.get('receive:'+transaction.user_discord_id_receive, async function(err, receive) { 
+                            resolve(receive) ;
+                        });
                     });
-                    let getTipUserReceive = global.clientRedis.get('tip:'+transaction.user_discord_id_receive, async function(err, tip) { 
-                        return tip;
+                    let getTipUserReceive = await new Promise( ( resolve, reject ) => {
+                        return global.clientRedis.get('tip:'+transaction.user_discord_id_receive, async function(err, tip) { 
+                            resolve(tip) ;
+                        });
                     });
                     let msg_discord = JSON.parse(transactionQueue.msg_discord);
                     msg = await new Promise( ( resolve, reject ) => {
