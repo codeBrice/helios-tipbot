@@ -133,7 +133,10 @@ exports.fnRunCrons = function () {
                                     user.send(MESSAGEUTIL.msg_embed(title,
                                     'The user'+ msg.author + titleDescription +' `' + receive.helios_amount +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) );
                                     await msg.clearReactions();
-                                    MESSAGEUTIL.reaction_complete_tip( msg );
+                                    if ( transactionQueue.isTip )
+                                        MESSAGEUTIL.reaction_complete_tip( msg );
+                                    if ( transactionQueue.isRain )
+                                        MESSAGEUTIL.reaction_complete_rain( msg );
                                 });
                             }
                         }
