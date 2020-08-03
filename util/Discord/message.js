@@ -12,18 +12,20 @@ class Message {
         msg.react('✉️');
     }
     async reaction_complete_tip( msg ) {
-        await msg.react('🇹');
+        /* await msg.react('🇹');
         await msg.react('🇮');
         await msg.react('🇵');
-        await msg.react('✅');
+        await msg.react('✅'); */
+        await msg.react('💰');
     }
 
     async reaction_complete_rain ( msg ) {
-        await msg.react('🇷');
+        /* await msg.react('🇷');
         await msg.react('🇦');
         await msg.react('🇮');
         await msg.react('🇳');
-        await msg.react('💦');
+        await msg.react('💦'); */
+        await msg.react('🌧️');
     }
 
     async reaction_transaction_queue ( msg ) {
