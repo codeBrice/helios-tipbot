@@ -132,19 +132,21 @@ exports.fnRunCrons = function () {
                                     let titleDescription = ( transactionQueue.isTip ? 'tip you': 'rain you');
                                     user.send(MESSAGEUTIL.msg_embed(title,
                                     'The user'+ msg.author + titleDescription +' `' + receive.helios_amount +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) );
-                                    await msg.clearReactions();
-                                    if ( transactionQueue.isTip )
-                                        MESSAGEUTIL.reaction_complete_tip( msg );
-                                    if ( transactionQueue.isRain )
-                                        MESSAGEUTIL.reaction_complete_rain( msg );
                                 });
                             }
                         }
+                        await msg.clearReactions();
+                        if ( transactionQueue.isTip )
+                            MESSAGEUTIL.reaction_complete_tip( msg );
+                        if ( transactionQueue.isRain )
+                            MESSAGEUTIL.reaction_complete_rain( msg );
                     } else {
                         transactionQueue.attemps += 1;
                         if ( transactionQueue.attemps >= 10 ) {
                             transactionQueue.isProcessed = true;
                             transactionQueue.isProcessedFailed = true;
+                            await msg.clearReactions();
+                            MESSAGEUTIL.reaction_fail( msg );
                         } else {
                             transactionQueue.isProcessed = false;
                         }
