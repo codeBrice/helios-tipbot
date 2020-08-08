@@ -9,6 +9,8 @@ const Rain = require('./cogs/rain');
 const RAIN = new Rain();
 const MessageUtil = require('./util/Discord/message');
 const MESSAGEUTIL = new MessageUtil();
+const Coingecko = require('./middleware/coingecko');
+const COINGECKO = new Coingecko();
 
 class Command {
     async onMessage( msg ) {
@@ -47,6 +49,9 @@ class Command {
                 case 'help':
                     await msg.author.send( MESSAGEUTIL.msg_embed_help() );
                     MESSAGEUTIL.reaction_dm( msg );
+                    break;
+                case 'price':
+                    await COINGECKO.price( msg );
                     break;
                 default:
                     break;
