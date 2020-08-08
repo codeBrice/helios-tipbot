@@ -66,6 +66,7 @@ class Message {
         .addField(envConfig.ALIASCOMMAND+'wallet ', 'Get your public wallet')
         .addField(envConfig.ALIASCOMMAND+'withdraw ', 'Withdraw HELIOS to an external address')
         .addField(envConfig.ALIASCOMMAND+'rain ', 'Distribute a tip amount amongst active users')
+        .addField(envConfig.ALIASCOMMAND+'price ', 'Get Helios price')
 
         return exampleEmbed;
     }
