@@ -170,7 +170,7 @@ class Rain {
             });
             for(let i = 0; i < allUser.length; i ++ ) {
                 let getActivity = await new Promise( ( resolve, reject ) => {
-                    return global.clientRedis.get('activity:'+allUser[i].user_discord_id+msg.guild.id, async function(err, activity) { 
+                    return global.clientRedis.get('activity:'+allUser[i].user_discord_id+msg.guild.id, function(err, activity) { 
                         resolve(activity) ;
                     });
                 });

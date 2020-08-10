@@ -23,19 +23,26 @@ class Tip {
                 msg.author.send( msgs.server_message );
             } else {
                 let amount = UTIL.parseFloat( global.ctx.args[1] );
+                const userInfoSend = await USERINFO.getUser( msg.author.id );
+
+                if( !userInfoSend ) {
+                    msg.author.send( msgs.not_wallet );
+                    await MESSAGEUTIL.reaction_fail( msg );
+                    return;
+                }
                 if ( amount < envConfig.MINTIP ) {
                     msg.author.send( msgs.min_tip + '`(' + `${envConfig.MINTIP }` +' HLS)`');
-                    MESSAGEUTIL.reaction_fail( msg );
+                    await MESSAGEUTIL.reaction_fail( msg );
                     return;
                 }
                 if( amount > envConfig.MAXTIP ) {
                     msg.author.send( msgs.max_tip + '`(' + `${envConfig.MAXTIP }` +' HLS)`');
-                    MESSAGEUTIL.reaction_fail( msg );
+                    await MESSAGEUTIL.reaction_fail( msg );
                     return;
                 }
                 if ( typeof amount != "number" || isNaN(amount) ){
                     msg.author.send( msgs.invalid_command + ', the helios amount is not numeric.' + msgs.example_tip);
-                    MESSAGEUTIL.reaction_fail( msg );
+                    await MESSAGEUTIL.reaction_fail( msg );
                     return;
                 }
                 const getTotalAmountWithGas = new Promise( (resolve, reject) => {
@@ -63,14 +70,13 @@ class Tip {
                                 
                             if(  ( isSplit ? getTotalAmountWithGas : getTotalAmountWithGas*user_tip_id_list.length) >= userInfoAuthorBalance ) {
                                 msg.author.send( msgs.insufficient_balance + ', remember to have enough gas for the transaction.');
-                                MESSAGEUTIL.reaction_fail( msg );
+                                await MESSAGEUTIL.reaction_fail( msg );
                                 return;
                             }
 
                             if ( isSplit )
                                 amount = amount / user_tip_id_list.length;
                             
-                            const userInfoSend = await USERINFO.getUser( msg.author.id );
                             //transaction object
                             txs = await UTIL.arrayTransaction( msg , user_tip_id_list, userInfoSend , amount, true, false );
                             
@@ -99,31 +105,30 @@ class Tip {
                                         }
                                     } else {
                                         await TRANSACTIONQUEUECONTROLLER.create( txs , msg , true , false);
-                                        MESSAGEUTIL.reaction_transaction_queue( msg );
+                                        await MESSAGEUTIL.reaction_transaction_queue( msg );
                                         logger.error( error );
                                         return;
                                     }
                                 }).catch( async error => {
                                     await TRANSACTIONQUEUECONTROLLER.create( txs , msg , true , false);
-                                    MESSAGEUTIL.reaction_transaction_queue( msg );
+                                    await MESSAGEUTIL.reaction_transaction_queue( msg );
                                     logger.error( error );
                                     return;
                                 });   
                             }
                         } else {
                             msg.author.send( msgs.invalid_tip_count + ', ' + msgs.example_tip)
-                            MESSAGEUTIL.reaction_fail( msg );
+                            await MESSAGEUTIL.reaction_fail( msg );
                             return;
                         }
                     }).catch( async error => {
                         await TRANSACTIONQUEUECONTROLLER.create( txs , msg , true , false);
-                        MESSAGEUTIL.reaction_transaction_queue( msg );
+                        await MESSAGEUTIL.reaction_transaction_queue( msg );
                         logger.error( error );
                     });
                 }).catch( async error => {
                     await TRANSACTIONQUEUECONTROLLER.create( txs , msg , true , false);
-                    MESSAGEUTIL.reaction_transaction_queue( msg );
-                    MESSAGEUTIL.reaction_fail( msg );
+                    await MESSAGEUTIL.reaction_transaction_queue( msg );
                 });
             }
         } catch (error) {

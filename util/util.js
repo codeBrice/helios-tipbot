@@ -31,9 +31,8 @@ class Util {
             let transactionEntitie = new SendTransaction();
             let getUserReceive = await USERINFO.getUser( user_tip_id_list[i].user_discord_id );
             if( !getUserReceive ) {
-                msg.author.send(`The user ${user_tip_id_list[i].tag} has not generated an account in Helios TipBot.`);
-                MESSAGEUTIL.reaction_fail( msg );
-                return;
+                await USERINFO.generateUserWallet( user_tip_id_list[i].user_discord_id );
+                getUserReceive = await USERINFO.getUser( user_tip_id_list[i].user_discord_id );
             }
 
             transactionEntitie.from = userInfoSend.wallet;
@@ -57,7 +56,7 @@ class Util {
             if ( isRain )
                 await TRANSACTIONQUEUECONTROLLER.create( txs , msg , false , true);
 
-            MESSAGEUTIL.reaction_transaction_queue( msg );
+            await MESSAGEUTIL.reaction_transaction_queue( msg );
             return txs = [];
         }
         return txs;
