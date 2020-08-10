@@ -14,7 +14,7 @@ const TRANSACTIONQUEUECONTROLLER = new TransactionQueueController();
 const msgs = require('../util/msg.json');
 
 exports.fnRunCrons = function () {
-    let cronReceive = cron.job("22 */2 * * * *", function(){
+    let cronReceive = cron.job("22 */10 * * * *", function(){
         logger.info('Start receive tx with external cron');
         const users = new Promise( (resolve, reject ) => {
             resolve(USERINFO.findAllUser());

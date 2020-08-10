@@ -13,7 +13,7 @@ class UserInfoController {
         const userDiscordId = await this.getUser( user_discord_id );
         if ( userDiscordId == null ) {
             const account = await HELIOS.accountCreate( envConfig.ENCRYPT_KEYSTORE );
-            USERINFODAO.create( user_discord_id, account.account.address , JSON.stringify(account.encrypt));
+            await USERINFODAO.create( user_discord_id, account.account.address , JSON.stringify(account.encrypt));
             return account;
         }
         return false;
