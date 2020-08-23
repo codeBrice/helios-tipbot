@@ -23,18 +23,12 @@ class Account {
             //console.log( 'msg guild id: ' + msg.guild + ' msg author id: ' + msg.author.id );
             const isDm = UTIL.isDmChannel( msg.channel.type );
             if ( isDm ){
-                const userInfo = new Promise((resolve, reject) => {
-                    const generateWallet = userInfoController.generateUserWallet( msg.author.id );
-                    resolve ( generateWallet );
-                });
-                userInfo.then( userInfo => {
-                    if ( userInfo )
-                        msg.author.send( MESSAGEUTIL.msg_embed('Generate account', 'Your wallet is: '+ '`'+userInfo.account.address+'`') );
-                    else 
-                        msg.author.send('You already have a wallet, please use the `.wallet` command to know it.')
-                }).catch( error => {
-                    logger.error( error );
-                });
+                const userInfo = await userInfoController.generateUserWallet( msg.author.id );
+                if ( userInfo ) {
+                    await msg.author.send( MESSAGEUTIL.msg_embed('Generate account', 'Your wallet is: '+ '`'+userInfo.account.address+'`') );
+                } else {
+                    msg.author.send('You already have a wallet, please use the `wallet` command to know it.')
+                }
             } else {
                 msg.delete( msg );
                 msg.author.send( msgs.direct_message + ' (`' + msg.content + '`)' );
@@ -49,18 +43,12 @@ class Account {
             //console.log( 'msg guild id: ' + msg.guild + ' msg author id: ' + msg.author.id );
             const isDm = UTIL.isDmChannel( msg.channel.type );
             if ( isDm ){
-                const userInfoPrivateKey = new Promise((resolve, reject) => {
-                    const getPrivateKey = userInfoController.getPrivateKey( msg.author.id );
-                    resolve ( getPrivateKey );
-                });
-                userInfoPrivateKey.then( privateKey => {
-                    if ( privateKey )
-                        msg.author.send( MESSAGEUTIL.msg_embed( 'Private key' , 'Your private key is: '+ '`'+ privateKey +'`'))
-                    else
-                        msg.author.send('You dont have a account.')
-                }).catch( error => {
-                    logger.error( error );
-                });
+                const userInfoPrivateKey = await userInfoController.getPrivateKey( msg.author.id );
+                if ( userInfoPrivateKey ) {
+                    await msg.author.send( MESSAGEUTIL.msg_embed( 'Private key' , 'Your private key is: '+ '`'+ userInfoPrivateKey +'`'))
+                } else {
+                    await msg.author.send('You dont have a account.')
+                };
             } else {
                 msg.delete( msg );
                 msg.author.send( msgs.direct_message + ' (`' + msg.content + '`)' );
@@ -72,20 +60,17 @@ class Account {
 
     async getBalance( msg ){
         try {
-            const userInfoBalance = new Promise((resolve, reject) => {
-                const getBalance = userInfoController.getBalance( msg.author.id );
-                resolve ( getBalance );
-            });
-            userInfoBalance.then( userInfoBalance => {
+            const userInfoBalance = await userInfoController.getBalance( msg.author.id );
+            if ( userInfoBalance ) {
                 msg.author.send( MESSAGEUTIL.msg_embed('Balance' , msgs.balance + userInfoBalance + ' HLS') );
                 const isDm = UTIL.isDmChannel( msg.channel.type );
                 if ( !isDm ){
                     MESSAGEUTIL.reaction_dm( msg );
                 }
-            }).catch( error => {
+            } else {
                 msg.author.send( msgs.balance_error );
                 logger.error( error );
-            })
+            }
         } catch (error) {
             logger.error( error );
         }
@@ -93,21 +78,18 @@ class Account {
 
     async getWallet( msg ){
         try {
-            const userInfoWallet = new Promise((resolve, reject) => {
-                const getWallet = userInfoController.getWallet( msg.author.id );
-                resolve ( getWallet );
-            });
-            userInfoWallet.then( wallet => {
-                msg.author.send( MESSAGEUTIL.msg_embed('Wallet info', msgs.wallet +'`'+wallet+'`'));
+            const userInfoWallet = await userInfoController.getWallet( msg.author.id );
+            if ( userInfoWallet ) {
+                msg.author.send( MESSAGEUTIL.msg_embed('Wallet info', msgs.wallet +'`'+userInfoWallet+'`'));
                 const isDm = UTIL.isDmChannel( msg.channel.type );
                 if ( !isDm ){
                     MESSAGEUTIL.reaction_dm( msg );
                 }
-            }).catch( error => {
+            } else {
                 msg.author.send( msgs.wallet_error);
                 MESSAGEUTIL.reaction_fail( msg );
                 logger.error( error );
-            })
+            }
         } catch (error) {
             msg.author.send( msgs.wallet_error);
             MESSAGEUTIL.reaction_fail( msg );
@@ -124,22 +106,14 @@ class Account {
                     msg.author.send( msgs.invalid_command + ', the helios amount is not numeric. ' + envConfig.ALIASCOMMAND + 'withdraw 100 0x00000');
                     return;
                 }
-                const userInfo = new Promise( ( resolve, reject ) => {
-                    resolve( userInfoController.getUser( msg.author.id ) );
-                })
-                userInfo.then( async userInfoData => {
+                const userInfo = await userInfoController.getUser( msg.author.id )
+                if ( userInfo ) {
                     if( userInfoData ) {
-                        const getTotalAmountWithGas = new Promise( (resolve, reject) => {
-                            const userInfo = userInfoController.getGasPriceSumAmount( amount );
-                            resolve( userInfo );
-                        });
+                        const getTotalAmountWithGas = await userInfoController.getGasPriceSumAmount( amount );
         
-                        getTotalAmountWithGas.then( getTotalAmountWithGas => {
-                            const userInfoAuthorBalance = new Promise( (resolve, reject) => {
-                                const userInfoAuthor = userInfoController.getBalance( msg.author.id );
-                                resolve( userInfoAuthor );
-                            });
-                            userInfoAuthorBalance.then( async userInfoAuthorBalance => {
+                        if ( getTotalAmountWithGas ) {
+                            const userInfoAuthorBalance = await userInfoController.getBalance( msg.author.id );
+                            if ( userInfoAuthorBalance ) {
                                 if( getTotalAmountWithGas >= userInfoAuthorBalance ) {
                                     msg.author.send( msgs.amount_gas_error + ', remember to have enough gas for the transaction.');
                                     MESSAGEUTIL.reaction_fail( msg );
@@ -169,28 +143,26 @@ class Account {
                                     MESSAGEUTIL.reaction_transaction_queue( msg );
                                     return;
                                 }
-                                const sendTx = await new Promise( ( resolve, reject ) => {
-                                    resolve( TRANSACTIONCONTROLLER.sendTransaction( tx , userInfoData.keystore_wallet) ) 
-                                })
-                                global.clientRedis.set( 'tip:'+msg.author.id, msg.author.id );
-                                global.clientRedis.expire('tip:'+msg.author.id, 10);
+                                const sendTx = await TRANSACTIONCONTROLLER.sendTransaction( tx , userInfoData.keystore_wallet);
                                 if ( !sendTx.length ) {
+                                    global.clientRedis.set( 'tip:'+msg.author.id, msg.author.id );
+                                    global.clientRedis.expire('tip:'+msg.author.id, 10);
                                     msg.author.send( msgs.error_withdraw + envConfig.ALIASCOMMAND + 'withdraw 100 0x00000' );
                                     logger.error( error );
                                 } else {
                                     msg.author.send(MESSAGEUTIL.msg_embed('Withdraw process', msgs.withdraw_success)); 
                                 }
-                            });
-                        });
+                            };
+                        }
                     }
-                }).catch( error => {
+                } else {
                     msg.author.send( msgs.error_withdraw + envConfig.ALIASCOMMAND + 'withdraw 100 0x00000' );
                     MESSAGEUTIL.reaction_fail( msg );
                     logger.error( error );
-                });
+                } 
             } else {
                 msg.delete( msg );
-                msg.author.send( msgs.direct_message + ' (`.withdraw`)' );
+                msg.author.send( msgs.direct_message + ' (`withdraw`)' );
             }
         } catch (error) {
             msg.author.send( msgs.error_withdraw + envConfig.ALIASCOMMAND + 'withdraw 100 0x00000') ;

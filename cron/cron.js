@@ -99,75 +99,54 @@ exports.fnRunCrons = function () {
                         break;
                     }
                 }
-                const transaction = new Promise( (resolve, reject) => {
-                    const sendingTx = TRANSACTIONCONTROLLER.sendTransaction( transactions , transactions[0].keystore_wallet);
-                    resolve( sendingTx );
-                });
-                transaction.then( async tx => {
-                    if ( tx.length > 0 ) {
-                        if ( !transactionQueue.isRain && !transactionQueue.isTip ) {
+                const transaction = await TRANSACTIONCONTROLLER.sendTransaction( transactions , transactions[0].keystore_wallet);
+                if ( transaction.length > 0 ) {
+                    if ( !transactionQueue.isRain && !transactionQueue.isTip ) {
+                        transactionQueue.isProcessed = true;
+                        transactionQueue.attemps += 1;
+                        await TRANSACTIONQUEUECONTROLLER.update( transactionQueue.dataValues );
+                        msg.author.send(MESSAGEUTIL.msg_embed('Withdraw process', msgs.withdraw_success));
+                        MESSAGEUTIL.reaction_complete_tip( msg );
+                        return; 
+                    }
+                    for ( let receive of transaction ) {
+                        global.clientRedis.set( 'tip:'+receive.user_discord_id_send, receive.user_discord_id_send );
+                        global.clientRedis.expire('tip:'+receive.user_discord_id_send, 10);
+                        let userInfoReceive = await USERINFO.getUser( receive.user_discord_id_receive );
+                        let receiveTx = await TRANSACTIONCONTROLLER.receiveTransaction( receive, userInfoReceive.keystore_wallet, true , receive.user_id_send, receive.user_id_receive);
+                        if ( receiveTx.length > 0  ) {
+                            global.clientRedis.set( 'receive:'+receive.user_discord_id_receive, receive.user_discord_id_receive );
+                            global.clientRedis.expire('receive:'+receive.user_discord_id_receive, 10);
                             transactionQueue.isProcessed = true;
                             transactionQueue.attemps += 1;
                             await TRANSACTIONQUEUECONTROLLER.update( transactionQueue.dataValues );
-                            msg.author.send(MESSAGEUTIL.msg_embed('Withdraw process', msgs.withdraw_success));
-                            MESSAGEUTIL.reaction_complete_tip( msg );
-                            return; 
-                        }
-                        for ( let receive of tx ) {
-                            global.clientRedis.set( 'tip:'+receive.user_discord_id_send, receive.user_discord_id_send );
-                            global.clientRedis.expire('tip:'+receive.user_discord_id_send, 10);
-                            let userInfoReceive = await new Promise((resolve, reject) => {
-                                const getUser = USERINFO.getUser( receive.user_discord_id_receive );
-                                resolve( getUser );
+                            global.client.fetchUser( receive.user_discord_id_receive , false ).then(async user => {
+                                let title = ( transactionQueue.isTip ? 'Tip receive': 'Rain receive');
+                                let titleDescription = ( transactionQueue.isTip ? 'tip you': 'rain you');
+                                await user.send(MESSAGEUTIL.msg_embed(title,
+                                'The user'+ msg.author + titleDescription +' `' + receive.helios_amount +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) );
                             });
-                            let receiveTx = await TRANSACTIONCONTROLLER.receiveTransaction( receive, userInfoReceive.keystore_wallet, true , receive.user_id_send, receive.user_id_receive);
-                            if ( receiveTx.length > 0  ) {
-                                global.clientRedis.set( 'receive:'+receive.user_discord_id_receive, receive.user_discord_id_receive );
-                                global.clientRedis.expire('receive:'+receive.user_discord_id_receive, 10);
-                                transactionQueue.isProcessed = true;
-                                transactionQueue.attemps += 1;
-                                await TRANSACTIONQUEUECONTROLLER.update( transactionQueue.dataValues );
-                                global.client.fetchUser( receive.user_discord_id_receive , false ).then(async user => {
-                                    let title = ( transactionQueue.isTip ? 'Tip receive': 'Rain receive');
-                                    let titleDescription = ( transactionQueue.isTip ? 'tip you': 'rain you');
-                                    user.send(MESSAGEUTIL.msg_embed(title,
-                                    'The user'+ msg.author + titleDescription +' `' + receive.helios_amount +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) );
-                                });
-                            }
                         }
-                        await msg.clearReactions();
-                        if ( transactionQueue.isTip )
-                            MESSAGEUTIL.reaction_complete_tip( msg );
-                        if ( transactionQueue.isRain )
-                            MESSAGEUTIL.reaction_complete_rain( msg );
-                    } else {
-                        transactionQueue.attemps += 1;
-                        if ( transactionQueue.attemps >= 10 ) {
-                            transactionQueue.isProcessed = true;
-                            transactionQueue.isProcessedFailed = true;
-                            await msg.clearReactions();
-                            MESSAGEUTIL.reaction_fail( msg );
-                        } else {
-                            transactionQueue.isProcessed = false;
-                        }
-                        await TRANSACTIONQUEUECONTROLLER.update( transactionQueue.dataValues );
-                        logger.error( error );
-                        return;
                     }
-                }).catch( async error => {
+                    await msg.clearReactions();
+                    if ( transactionQueue.isTip )
+                        MESSAGEUTIL.reaction_complete_tip( msg );
+                    if ( transactionQueue.isRain )
+                        MESSAGEUTIL.reaction_complete_rain( msg );
+                } else {
                     transactionQueue.attemps += 1;
                     if ( transactionQueue.attemps >= 10 ) {
                         transactionQueue.isProcessed = true;
                         transactionQueue.isProcessedFailed = true;
                         await msg.clearReactions();
-                        msg.author.send(msgs.general_transaction_fail);
+                        MESSAGEUTIL.reaction_fail( msg );
                     } else {
                         transactionQueue.isProcessed = false;
                     }
-                    TRANSACTIONQUEUECONTROLLER.update( transactionQueue.dataValues );
+                    await TRANSACTIONQUEUECONTROLLER.update( transactionQueue.dataValues );
                     logger.error( error );
                     return;
-                });
+                }
             }
         } catch (error) {
             logger.error( error );
