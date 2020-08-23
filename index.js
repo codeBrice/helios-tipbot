@@ -28,7 +28,7 @@ client.on('message', msg => {
         global.ctx = new DiscordContext(msg);
         if (msg.author.bot)
             return;
-        //console.log(msg);
+            
         COMMAND.onMessage( msg );
     } catch (error) {
         logger.error( error );

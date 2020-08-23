@@ -45,18 +45,12 @@ class Tip {
                     await MESSAGEUTIL.reaction_fail( msg );
                     return;
                 }
-                const getTotalAmountWithGas = new Promise( (resolve, reject) => {
-                    const userInfo = USERINFO.getGasPriceSumAmount( amount );
-                    resolve( userInfo );
-                });
+
+                const getTotalAmountWithGas = await USERINFO.getGasPriceSumAmount( amount );
                 let txs = [];
-                getTotalAmountWithGas.then( getTotalAmountWithGas => {
-                    const userInfoAuthorBalance = new Promise( (resolve, reject) => {
-                        const userInfoAuthor = USERINFO.getBalance( msg.author.id );
-                        resolve( userInfoAuthor );
-                    });
-                    userInfoAuthorBalance.then( async userInfoAuthorBalance => {
-                        //console.log( 'menciones', msg.mentions.users.array() );
+                if ( getTotalAmountWithGas ) {
+                    const userInfoAuthorBalance = await USERINFO.getBalance( msg.author.id );
+                    if ( userInfoAuthorBalance ) {
                         if ( msg.mentions.users.array().length > 0 ) {
                             let user_tip_id_list = [];
 
@@ -79,57 +73,47 @@ class Tip {
                             
                             //transaction object
                             txs = await UTIL.arrayTransaction( msg , user_tip_id_list, userInfoSend , amount, true, false );
-                            
                             if ( txs.length > 0 ) {
-                                const transaction = new Promise( (resolve, reject) => {
-                                    const sendingTx = TRANSACTION.sendTransaction( txs , userInfoSend.keystore_wallet);
-                                    resolve( sendingTx );
-                                });
-                                transaction.then( async tx => {
-                                    if ( tx.length > 0 ) {
-                                        for ( let receive of tx ) {
-                                            let userInfoReceive = await new Promise((resolve, reject) => {
-                                                const getUser = USERINFO.getUser( receive.user_discord_id_receive );
-                                                resolve( getUser );
+                            const transaction = await TRANSACTION.sendTransaction( txs , userInfoSend.keystore_wallet);
+                                if ( transaction.length > 0 ) {
+                                    for ( let receive of transaction ) {
+                                        let userInfoReceive = await USERINFO.getUser( receive.user_discord_id_receive );
+                                        let receiveTx = await TRANSACTION.receiveTransaction( receive, userInfoReceive.keystore_wallet, true , receive.user_id_send, receive.user_id_receive);
+                                        if ( receiveTx.length > 0  ) {
+                                            global.clientRedis.set( 'receive:'+receive.user_discord_id_receive, receive.user_discord_id_receive );
+                                            global.clientRedis.expire('receive:'+receive.user_discord_id_receive, 10);
+                                            global.client.fetchUser( receive.user_discord_id_receive , false ).then( async user => {
+                                                await user.send(MESSAGEUTIL.msg_embed('Tip receive',
+                                                'The user'+ msg.author + ' tip you `' + amount +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) ); 
+                                                await MESSAGEUTIL.reaction_complete_tip( msg );
                                             });
-                                            let receiveTx = await TRANSACTION.receiveTransaction( receive, userInfoReceive.keystore_wallet, true , receive.user_id_send, receive.user_id_receive);
-                                            if ( receiveTx.length > 0  ) {
-                                                global.clientRedis.set( 'receive:'+receive.user_discord_id_receive, receive.user_discord_id_receive );
-                                                global.clientRedis.expire('receive:'+receive.user_discord_id_receive, 10);
-                                                global.client.fetchUser( receive.user_discord_id_receive , false ).then(user => {
-                                                    user.send(MESSAGEUTIL.msg_embed('Tip receive',
-                                                    'The user'+ msg.author + ' tip you `' + amount +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) ); 
-                                                    MESSAGEUTIL.reaction_complete_tip( msg );
-                                                });
-                                            }
                                         }
-                                    } else {
-                                        await TRANSACTIONQUEUECONTROLLER.create( txs , msg , true , false);
-                                        await MESSAGEUTIL.reaction_transaction_queue( msg );
-                                        logger.error( error );
-                                        return;
                                     }
-                                }).catch( async error => {
-                                    await TRANSACTIONQUEUECONTROLLER.create( txs , msg , true , false);
+                                } else {
                                     await MESSAGEUTIL.reaction_transaction_queue( msg );
-                                    logger.error( error );
                                     return;
-                                });   
+                                } 
+                            } else {
+                                await MESSAGEUTIL.reaction_transaction_queue( msg );
+                                return;
                             }
                         } else {
                             msg.author.send( msgs.invalid_tip_count + ', ' + msgs.example_tip)
                             await MESSAGEUTIL.reaction_fail( msg );
                             return;
                         }
-                    }).catch( async error => {
-                        await TRANSACTIONQUEUECONTROLLER.create( txs , msg , true , false);
-                        await MESSAGEUTIL.reaction_transaction_queue( msg );
-                        logger.error( error );
-                    });
-                }).catch( async error => {
-                    await TRANSACTIONQUEUECONTROLLER.create( txs , msg , true , false);
-                    await MESSAGEUTIL.reaction_transaction_queue( msg );
-                });
+                    } else {
+                        await msg.author.send( msgs.balance_error );
+                        await MESSAGEUTIL.reaction_fail( msg );
+                        logger.error('Error get the balance with gas on TIP class');
+                        return;
+                    }
+                } else {
+                    await msg.author.send( msgs.balance_error );
+                    await MESSAGEUTIL.reaction_fail( msg );
+                    logger.error('Error get the balance with gas on TIP class');
+                    return;
+                };
             }
         } catch (error) {
             logger.error( error );

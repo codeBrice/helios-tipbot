@@ -26,8 +26,6 @@ class Util {
     async arrayTransaction( msg , user_tip_id_list, userInfoSend, amount, isTip, isRain ){
         let txs = [];
         for( let i = 0; i < user_tip_id_list.length; i++ ) {
-            global.clientRedis.set( 'tip:'+userInfoSend.user_discord_id, userInfoSend.user_discord_id );
-            global.clientRedis.expire('tip:'+userInfoSend.user_discord_id, 20);
             let transactionEntitie = new SendTransaction();
             let getUserReceive = await USERINFO.getUser( user_tip_id_list[i].user_discord_id );
             if( !getUserReceive ) {
@@ -51,6 +49,7 @@ class Util {
         let isQueue;
         isQueue = await this.isQueue( txs, msg );
         if ( isQueue ) {
+            console.log( 'es cola de transaccion' );
             if( isTip )
                 await TRANSACTIONQUEUECONTROLLER.create( txs , msg , true , false);
             if ( isRain )
@@ -67,6 +66,7 @@ class Util {
         let getReceive;
         let getTip;
         let getReceiveSend
+        let getTipSend;
         for(let i = 0; i < txs.length; i++ ) {
             if ( !isQueue ) {
 
@@ -86,9 +86,18 @@ class Util {
                         resolve(receive) ;
                     });
                 });
+                getTipSend = await new Promise( ( resolve, reject ) => {
+                    return global.clientRedis.get('tip:'+msg.author.id, function(err, tip) { 
+                        resolve(tip) ;
+                    });
+                });
 
-                if ( getReceive || getTip || getReceiveSend ) {
+                if ( getReceive || getTip || getReceiveSend || getTipSend) {
                     isQueue = true;
+                }
+                if( !getTipSend ) {
+                    global.clientRedis.set( 'tip:'+msg.author.id, msg.author.id );
+                    global.clientRedis.expire('tip:'+msg.author.id, 10);
                 }
             } else {
                 break;
