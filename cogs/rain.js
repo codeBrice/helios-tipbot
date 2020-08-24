@@ -77,8 +77,6 @@ class Rain {
                         let userInfoReceive = await USERINFOCONTROLLER.getUser( receive.user_discord_id_receive );
                         let receiveTx = await TRANSACTION.receiveTransaction( receive, userInfoReceive.keystore_wallet, true , receive.user_id_send, receive.user_id_receive);
                         if ( receiveTx.length > 0  ) {
-                            global.clientRedis.set( 'receive:'+receive.user_discord_id_receive, receive.user_discord_id_receive );
-                            global.clientRedis.expire('receive:'+receive.user_discord_id_receive, 10);
                             global.client.fetchUser( receive.user_discord_id_receive , false ).then( async user => {
                                 await user.send(MESSAGEUTIL.msg_embed('Rain receive',
                                 'The user'+ msg.author + ' rain you `' + amount +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) ); 

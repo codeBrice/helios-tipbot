@@ -145,7 +145,7 @@ class Account {
                             const sendTx = await TRANSACTIONCONTROLLER.sendTransaction( tx , userInfoData.keystore_wallet);
                             if ( !sendTx.length ) {
                                 global.clientRedis.set( 'tip:'+msg.author.id, msg.author.id );
-                                global.clientRedis.expire('tip:'+msg.author.id, 10);
+                                global.clientRedis.expire('tip:'+msg.author.id, 20);
                                 msg.author.send( msgs.error_withdraw + envConfig.ALIASCOMMAND + 'withdraw 100 0x00000' );
                                 logger.error( error );
                             } else {

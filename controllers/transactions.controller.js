@@ -41,7 +41,7 @@ class TransactionController {
         const receiveTxs = await HELIOS.getReceivableTransactions( receive.to, privateKey.privateKey );
         if ( receiveTxs.length ) {
             global.clientRedis.set( 'receive:'+user_id_receive, user_id_receive );
-            global.clientRedis.expire('receive:'+user_id_receive, 10);
+            global.clientRedis.expire('receive:'+user_id_receive, 30);
             let transaction = new Transaction();
             transaction.send_status = true;
             transaction.date = moment().utc().toDate();
