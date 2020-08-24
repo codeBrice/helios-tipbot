@@ -13,8 +13,7 @@ class Coingecko{
                     logger.error(error);
                 } else {
                     if (body.body) {
-                        const coingeckoInfo =body.body
-                        console.log( coingeckoInfo.market_data );
+                        const coingeckoInfo = body.body;
                         const exampleEmbed = new Discord.RichEmbed()
                         .setColor('#e6d46a')
                         .setTitle('Helios Protocol | HLS')

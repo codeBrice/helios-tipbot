@@ -49,7 +49,6 @@ class Util {
         let isQueue;
         isQueue = await this.isQueue( txs, msg );
         if ( isQueue ) {
-            console.log( 'es cola de transaccion' );
             if( isTip )
                 await TRANSACTIONQUEUECONTROLLER.create( txs , msg , true , false);
             if ( isRain )
@@ -67,40 +66,43 @@ class Util {
         let getTip;
         let getReceiveSend
         let getTipSend;
-        for(let i = 0; i < txs.length; i++ ) {
-            if ( !isQueue ) {
-
-                getReceive = await new Promise( ( resolve, reject ) => {
-                    return global.clientRedis.get('receive:'+txs[i].user_discord_id_receive, function(err, receive) { 
-                        resolve(receive) ;
+        getTipSend = await new Promise( ( resolve, reject ) => {
+            return global.clientRedis.get('tip:'+msg.author.id, function(err, tip) { 
+                resolve(tip) ;
+            });
+        });
+        if( !getTipSend ) {
+            global.clientRedis.set( 'tip:'+msg.author.id, msg.author.id );
+            global.clientRedis.expire('tip:'+msg.author.id, 20);
+        }
+            
+        getReceiveSend = await new Promise( ( resolve, reject ) => {
+            return global.clientRedis.get('receive:'+msg.author.id, function(err, receive) { 
+                resolve(receive) ;
+            });
+        });
+        if ( getTipSend || getReceiveSend ) {
+            isQueue = true 
+        } else {
+            for(let i = 0; i < txs.length; i++ ) {
+                if ( !isQueue ) {
+    
+                    getReceive = await new Promise( ( resolve, reject ) => {
+                        return global.clientRedis.get('receive:'+txs[i].user_discord_id_receive, function(err, receive) { 
+                            resolve(receive) ;
+                        });
                     });
-                });
-                getTip = await new Promise( ( resolve, reject ) => {
-                    return global.clientRedis.get('tip:'+txs[i].user_discord_id_receive, function(err, tip) { 
-                        resolve(tip) ;
+                    getTip = await new Promise( ( resolve, reject ) => {
+                        return global.clientRedis.get('tip:'+txs[i].user_discord_id_receive, function(err, tip) { 
+                            resolve(tip) ;
+                        });
                     });
-                });
-
-                getReceiveSend = await new Promise( ( resolve, reject ) => {
-                    return global.clientRedis.get('receive:'+msg.author.id, function(err, receive) { 
-                        resolve(receive) ;
-                    });
-                });
-                getTipSend = await new Promise( ( resolve, reject ) => {
-                    return global.clientRedis.get('tip:'+msg.author.id, function(err, tip) { 
-                        resolve(tip) ;
-                    });
-                });
-
-                if ( getReceive || getTip || getReceiveSend || getTipSend) {
-                    isQueue = true;
+                    if ( getReceive || getTip ) {
+                        isQueue = true;
+                    }
+                } else {
+                    break;
                 }
-                if( !getTipSend ) {
-                    global.clientRedis.set( 'tip:'+msg.author.id, msg.author.id );
-                    global.clientRedis.expire('tip:'+msg.author.id, 10);
-                }
-            } else {
-                break;
             }
         }
         return isQueue;

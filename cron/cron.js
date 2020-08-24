@@ -41,7 +41,7 @@ exports.fnRunCrons = function () {
                 if( receiveTx.length ) {
                     for( let receive of receiveTx ) {
                         global.clientRedis.set( 'receive:'+user.user_discord_id, user.user_discord_id );
-                        global.clientRedis.expire('receive:'+user.user_discord_id, 10);
+                        global.clientRedis.expire('receive:'+user.user_discord_id, 20);
                         global.client.fetchUser( user.user_discord_id , false ).then(async user => {
                             user.send(MESSAGEUTIL.msg_embed('Transaction receive',
                             'The wallet '+ receive.from + ' send you `' + await HELIOS.getAmountFloat(receive.value)  +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receive.hash}`) ); 
@@ -111,12 +111,10 @@ exports.fnRunCrons = function () {
                     }
                     for ( let receive of transaction ) {
                         global.clientRedis.set( 'tip:'+receive.user_discord_id_send, receive.user_discord_id_send );
-                        global.clientRedis.expire('tip:'+receive.user_discord_id_send, 10);
+                        global.clientRedis.expire('tip:'+receive.user_discord_id_send, 20);
                         let userInfoReceive = await USERINFO.getUser( receive.user_discord_id_receive );
                         let receiveTx = await TRANSACTIONCONTROLLER.receiveTransaction( receive, userInfoReceive.keystore_wallet, true , receive.user_id_send, receive.user_id_receive);
                         if ( receiveTx.length > 0  ) {
-                            global.clientRedis.set( 'receive:'+receive.user_discord_id_receive, receive.user_discord_id_receive );
-                            global.clientRedis.expire('receive:'+receive.user_discord_id_receive, 10);
                             transactionQueue.isProcessed = true;
                             transactionQueue.attemps += 1;
                             await TRANSACTIONQUEUECONTROLLER.update( transactionQueue.dataValues );
@@ -130,9 +128,9 @@ exports.fnRunCrons = function () {
                     }
                     await msg.clearReactions();
                     if ( transactionQueue.isTip )
-                        MESSAGEUTIL.reaction_complete_tip( msg );
+                        await MESSAGEUTIL.reaction_complete_tip( msg );
                     if ( transactionQueue.isRain )
-                        MESSAGEUTIL.reaction_complete_rain( msg );
+                        await MESSAGEUTIL.reaction_complete_rain( msg );
                 } else {
                     transactionQueue.attemps += 1;
                     if ( transactionQueue.attemps >= 10 ) {
