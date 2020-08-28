@@ -100,7 +100,7 @@ class Account {
     async withdraw( msg ) {
         try {
             if ( UTIL.isDmChannel(msg.channel.type) ) {
-                let amount = UTIL.parseFloat( global.ctx.args[1] );
+                let amount = Util.parseFloat( global.ctx.args[1] );
     
                 if ( typeof amount != "number" || isNaN(amount) ){
                     msg.author.send( msgs.invalid_command + ', the helios amount is not numeric. ' + envConfig.ALIASCOMMAND + 'withdraw 100 0x00000');

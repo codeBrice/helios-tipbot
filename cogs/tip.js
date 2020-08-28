@@ -20,7 +20,7 @@ class Tip {
             if ( isDm ) {
                 msg.author.send( msgs.server_message );
             } else {
-                let amount = UTIL.parseFloat( global.ctx.args[1] );
+                let amount = Util.parseFloat( global.ctx.args[1] );
                 const userInfoSend = await USERINFO.getUser( msg.author.id );
 
                 if( !userInfoSend ) {

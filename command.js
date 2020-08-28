@@ -10,6 +10,7 @@ const MessageUtil = require('./util/Discord/message');
 const MESSAGEUTIL = new MessageUtil();
 const Coingecko = require('./middleware/coingecko');
 const COINGECKO = new Coingecko();
+const roulette = require('./cogs/roulette');
 
 class Command {
     async onMessage( msg ) {
@@ -52,6 +53,11 @@ class Command {
                     break;
                 case 'price':
                     await COINGECKO.price( msg );
+                    break;
+                case 'sg':
+                case 'sr':
+                case 'sb':
+                    roulette.execute(msg);
                     break;
                 default:
                     break;

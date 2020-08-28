@@ -12,6 +12,9 @@ const clientRedis = redis.createClient();
 const cron = require('./cron/cron.js').fnRunCrons();
 global.client = client;
 global.clientRedis = clientRedis;
+global.client.config = {
+    PREFIX: envConfig.ALIASCOMMAND,
+};
 
 clientRedis.on("connect", function() {
     logger.info("You are now connected on Redis DB");
