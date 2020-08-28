@@ -20,7 +20,7 @@ class UserInfoController {
     }
 
     async findAllUser() {
-        return await USERINFODAO.findAdll();
+        return await USERINFODAO.findAll();
     }
 
     async getUser( user_discord_id ) {
@@ -51,6 +51,10 @@ class UserInfoController {
     async getGasPriceSumAmount( amount ){
         const sumAmount = await HELIOS.gasPriceSumAmount( amount, envConfig.GAS );
         return sumAmount;
+    }
+
+    async findByWallet( wallet ) {
+        return await USERINFODAO.findByWallet( wallet );
     }
 
 }

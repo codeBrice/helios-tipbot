@@ -34,14 +34,14 @@ class TransactionController {
         });
 
         if ( getReceive || getTip ) {
-            return;
+            return [];
         }
 
         const privateKey = await HELIOS.jsonToAccount( keystore , envConfig.ENCRYPT_KEYSTORE );
         const receiveTxs = await HELIOS.getReceivableTransactions( receive.to, privateKey.privateKey );
         if ( receiveTxs.length ) {
             global.clientRedis.set( 'receive:'+user_id_receive, user_id_receive );
-            global.clientRedis.expire('receive:'+user_id_receive, 30);
+            global.clientRedis.expire('receive:'+user_id_receive, 11);
             let transaction = new Transaction();
             transaction.send_status = true;
             transaction.date = moment().utc().toDate();

@@ -11,8 +11,6 @@ const MessageUtil = require('../util/Discord/message');
 const MESSAGEUTIL = new MessageUtil();
 const Transaction = require('../controllers/transactions.controller');
 const TRANSACTION = new Transaction();
-const TransactionQueueController = require('../controllers/transaction.queue.controller');
-const TRANSACTIONQUEUECONTROLLER = new TransactionQueueController();
 
 class Tip {
     async tip( msg, isSplit = false ){
@@ -76,17 +74,7 @@ class Tip {
                             if ( txs.length > 0 ) {
                             const transaction = await TRANSACTION.sendTransaction( txs , userInfoSend.keystore_wallet);
                                 if ( transaction.length > 0 ) {
-                                    for ( let receive of transaction ) {
-                                        let userInfoReceive = await USERINFO.getUser( receive.user_discord_id_receive );
-                                        let receiveTx = await TRANSACTION.receiveTransaction( receive, userInfoReceive.keystore_wallet, true , receive.user_id_send, receive.user_id_receive);
-                                        if ( receiveTx.length > 0  ) {
-                                            global.client.fetchUser( receive.user_discord_id_receive , false ).then( async user => {
-                                                await user.send(MESSAGEUTIL.msg_embed('Tip receive',
-                                                'The user'+ msg.author + ' tip you `' + amount +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) ); 
-                                                await MESSAGEUTIL.reaction_complete_tip( msg );
-                                            });
-                                        }
-                                    }
+                                    await UTIL.receiveTx( transaction, msg, amount );
                                 } else {
                                     await MESSAGEUTIL.reaction_transaction_queue( msg );
                                     return;
