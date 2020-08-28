@@ -1,5 +1,4 @@
 require('dotenv').config();
-const DiscordContext = require('discord-context');
 const Account = require('./cogs/account');
 const ACCOUNT = new Account();
 const Tip = require('./cogs/tip');
@@ -35,6 +34,7 @@ class Command {
                 case 'balance':
                 case 'b':
                 case 'bal':
+                case '$':
                     await ACCOUNT.getBalance( msg );
                     break;
                 case 'wallet':

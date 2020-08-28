@@ -9,6 +9,8 @@ require('dotenv').config();
 const envConfig = process.env;
 const TransactionQueueController = require('../controllers/transaction.queue.controller');
 const TRANSACTIONQUEUECONTROLLER = new TransactionQueueController();
+const Transaction = require('../controllers/transactions.controller');
+const TRANSACTION = new Transaction();
 
 class Util {
 
@@ -73,7 +75,7 @@ class Util {
         });
         if( !getTipSend ) {
             global.clientRedis.set( 'tip:'+msg.author.id, msg.author.id );
-            global.clientRedis.expire('tip:'+msg.author.id, 20);
+            global.clientRedis.expire('tip:'+msg.author.id, 11);
         }
             
         getReceiveSend = await new Promise( ( resolve, reject ) => {
@@ -106,6 +108,58 @@ class Util {
             }
         }
         return isQueue;
+    }
+
+    async receiveTx( transaction, msg, amount, isQueue = false, transactionQueue, isRain = false ) {
+        for ( let receive of transaction ) {
+            if ( isQueue ) {
+                await global.clientRedis.set( 'tip:'+receive.user_discord_id_send, receive.user_discord_id_send );
+                await global.clientRedis.expire('tip:'+receive.user_discord_id_send, 11);
+            }
+            let userInfoReceive = await USERINFO.getUser( receive.user_discord_id_receive );
+            let receiveTx = await TRANSACTION.receiveTransaction( receive, userInfoReceive.keystore_wallet, true , receive.user_id_send, receive.user_id_receive);
+            if ( receiveTx.length > 0  ) {
+                for ( let receiveTransaction of receiveTx ) {
+                    let isWalletBot = await USERINFO.findByWallet( receiveTransaction.from );
+                    if ( isWalletBot ) {
+                        if ( !isQueue ) {
+                            let fetchUser = await global.client.fetchUser( receive.user_discord_id_receive , false );
+                            if ( !isRain ) {
+                                await fetchUser.send(MESSAGEUTIL.msg_embed('Tip receive',
+                                    'The user'+ msg.author + ' tip you `' + amount +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) ); 
+                                await MESSAGEUTIL.reaction_complete_tip( msg );
+                            } else {
+                                await fetchUser.send(MESSAGEUTIL.msg_embed('Rain receive',
+                                    'The user'+ msg.author + ' rain you `' + amount +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) ); 
+                                await MESSAGEUTIL.reaction_complete_rain( msg );
+                            }
+        
+                        } else {
+                            transactionQueue.isProcessed = true;
+                            transactionQueue.attemps += 1;
+                            await TRANSACTIONQUEUECONTROLLER.update( transactionQueue.dataValues );
+                            let fetchUser = await global.client.fetchUser( receive.user_discord_id_receive , false );
+                            let title = ( transactionQueue.isTip ? 'Tip receive': 'Rain receive');
+                            let titleDescription = ( transactionQueue.isTip ? ' tip you': ' rain you');
+                            await fetchUser.send(MESSAGEUTIL.msg_embed(title,
+                            'The user'+ msg.author + titleDescription +' `' + receive.helios_amount +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) );
+                        }
+                    } else {
+                        let fetchUser = await global.client.fetchUser( receive.user_discord_id_receive , false );
+                        await fetchUser.send(MESSAGEUTIL.msg_embed('Transaction receive',
+                            'The wallet '+ receiveTransaction.from + ' send you `' + await HELIOS.getAmountFloat(receiveTransaction.value)  +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) ); 
+                    }
+                }
+            }
+        }
+        if ( isQueue && transactionQueue.isProcessed ) {
+            await msg.clearReactions();
+            if ( transactionQueue.isTip )
+                await MESSAGEUTIL.reaction_complete_tip( msg );
+            if ( transactionQueue.isRain )
+                await MESSAGEUTIL.reaction_complete_rain( msg );
+        }
+
     }
 
 }

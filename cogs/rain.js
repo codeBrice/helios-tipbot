@@ -73,17 +73,7 @@ class Rain {
             if ( txs.length > 0 ) {
                 const transaction = await TRANSACTION.sendTransaction( txs , userInfoSend.keystore_wallet);
                 if ( transaction.length > 0  ) {
-                    for ( let receive of transaction ) {
-                        let userInfoReceive = await USERINFOCONTROLLER.getUser( receive.user_discord_id_receive );
-                        let receiveTx = await TRANSACTION.receiveTransaction( receive, userInfoReceive.keystore_wallet, true , receive.user_id_send, receive.user_id_receive);
-                        if ( receiveTx.length > 0  ) {
-                            global.client.fetchUser( receive.user_discord_id_receive , false ).then( async user => {
-                                await user.send(MESSAGEUTIL.msg_embed('Rain receive',
-                                'The user'+ msg.author + ' rain you `' + amount +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) ); 
-                            });
-                            await MESSAGEUTIL.reaction_complete_rain( msg );
-                        }
-                    }
+                    await UTIL.receiveTx( transaction, msg, amount, false, null, true );
                 } else {
                     MESSAGEUTIL.reaction_transaction_queue( msg );
                     return;

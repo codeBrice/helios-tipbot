@@ -34,9 +34,21 @@ class UserInfoDao{
         }
     }
 
-    async findAdll () {
+    async findAll () {
         try {
             return userinfo.findAll();
+        } catch (error) {
+            logger.error( error );
+        }
+    }
+
+    async findByWallet ( wallet ) {
+        try {
+            return userinfo.findOne({
+                where: {
+                    wallet: wallet
+                }
+            });
         } catch (error) {
             logger.error( error );
         }
