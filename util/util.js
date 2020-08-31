@@ -11,6 +11,8 @@ const TransactionQueueController = require('../controllers/transaction.queue.con
 const TRANSACTIONQUEUECONTROLLER = new TransactionQueueController();
 const Transaction = require('../controllers/transactions.controller');
 const TRANSACTION = new Transaction();
+const conf = require("../config.js").jsonConfig();
+const logger = require(conf.pathLogger).getHeliosBotLogger();
 
 class Util {
 
@@ -121,33 +123,39 @@ class Util {
             if ( receiveTx.length > 0  ) {
                 for ( let receiveTransaction of receiveTx ) {
                     let isWalletBot = await USERINFO.findByWallet( receiveTransaction.from );
-                    if ( isWalletBot ) {
-                        if ( !isQueue ) {
-                            let fetchUser = await global.client.fetchUser( receive.user_discord_id_receive , false );
-                            if ( !isRain ) {
-                                await fetchUser.send(MESSAGEUTIL.msg_embed('Tip receive',
-                                    'The user'+ msg.author + ' tip you `' + amount +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) ); 
-                            } else {
-                                await fetchUser.send(MESSAGEUTIL.msg_embed('Rain receive',
-                                    'The user'+ msg.author + ' rain you `' + amount +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) ); 
-                            }
-        
-                        } else {
-                            transactionQueue.isProcessed = true;
-                            transactionQueue.attemps += 1;
-                            await TRANSACTIONQUEUECONTROLLER.update( transactionQueue.dataValues );
-                            let fetchUser = await global.client.fetchUser( receive.user_discord_id_receive , false );
-                            let title = ( transactionQueue.isTip ? 'Tip receive': 'Rain receive');
-                            let titleDescription = ( transactionQueue.isTip ? ' tip you': ' rain you');
-                            await fetchUser.send(MESSAGEUTIL.msg_embed(title,
-                            'The user'+ msg.author + titleDescription +' `' + receive.helios_amount +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) );
-                        }
-                    } else {
-                        let fetchUser = await global.client.fetchUser( receive.user_discord_id_receive , false );
-                        await fetchUser.send(MESSAGEUTIL.msg_embed('Transaction receive',
-                            'The wallet '+ receiveTransaction.from + ' send you `' + await HELIOS.getAmountFloat(receiveTransaction.value)  +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) ); 
-                    }
+                    this.sendMsgReceive( isQueue, isRain, isWalletBot, msg, amount, transactionQueue, receiveTx, receive );
                 }
+            }
+        }
+    }
+
+    async sendMsgReceive( isQueue, isRain, isWalletBot, msg, amount, transactionQueue, receiveTx, receive ) {
+        try {
+            let fetchUser = await global.client.fetchUser( receive.user_discord_id_receive , false );
+            if ( isWalletBot ) {
+                if ( !isQueue ) {
+                    if ( !isRain ) {
+                        await fetchUser.send(MESSAGEUTIL.msg_embed('Tip receive',
+                            'The user'+ msg.author + ' tip you `' + amount +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) );
+                    } else {
+                        await fetchUser.send(MESSAGEUTIL.msg_embed('Rain receive',
+                            'The user'+ msg.author + ' rain you `' + amount +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) ); 
+                    }
+    
+                } else {
+                    let fetchUser = await global.client.fetchUser( receive.user_discord_id_receive , false );
+                    let title = ( transactionQueue.isTip ? 'Tip receive': 'Rain receive');
+                    let titleDescription = ( transactionQueue.isTip ? ' tip you': ' rain you');
+                    await fetchUser.send(MESSAGEUTIL.msg_embed(title,
+                    'The user'+ msg.author + titleDescription +' `' + receive.helios_amount +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) );
+                }
+            } else {
+                await fetchUser.send(MESSAGEUTIL.msg_embed('Transaction receive',
+                    'The wallet '+ receiveTransaction.from + ' send you `' + await HELIOS.getAmountFloat(receiveTransaction.value)  +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) );
+            }
+        } catch (error) {
+            if( error.code != 50007 ) {
+                logger.error( error );
             }
         }
     }
