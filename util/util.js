@@ -127,11 +127,9 @@ class Util {
                             if ( !isRain ) {
                                 await fetchUser.send(MESSAGEUTIL.msg_embed('Tip receive',
                                     'The user'+ msg.author + ' tip you `' + amount +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) ); 
-                                await MESSAGEUTIL.reaction_complete_tip( msg );
                             } else {
                                 await fetchUser.send(MESSAGEUTIL.msg_embed('Rain receive',
                                     'The user'+ msg.author + ' rain you `' + amount +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) ); 
-                                await MESSAGEUTIL.reaction_complete_rain( msg );
                             }
         
                         } else {
@@ -152,14 +150,6 @@ class Util {
                 }
             }
         }
-        if ( isQueue && transactionQueue.isProcessed ) {
-            await msg.clearReactions();
-            if ( transactionQueue.isTip )
-                await MESSAGEUTIL.reaction_complete_tip( msg );
-            if ( transactionQueue.isRain )
-                await MESSAGEUTIL.reaction_complete_rain( msg );
-        }
-
     }
 
 }

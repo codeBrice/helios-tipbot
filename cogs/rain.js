@@ -73,6 +73,7 @@ class Rain {
             if ( txs.length > 0 ) {
                 const transaction = await TRANSACTION.sendTransaction( txs , userInfoSend.keystore_wallet);
                 if ( transaction.length > 0  ) {
+                    await MESSAGEUTIL.reaction_complete_rain( msg );
                     await UTIL.receiveTx( transaction, msg, amount, false, null, true );
                 } else {
                     MESSAGEUTIL.reaction_transaction_queue( msg );
@@ -83,9 +84,11 @@ class Rain {
                 return;
             }
         } catch (error) {
-            logger.error( error );
-            msg.author.send( msgs.rain_error )
-            MESSAGEUTIL.reaction_fail( msg );
+            if( error.code != 50007 ) {
+                msg.author.send( msgs.rain_error )
+                MESSAGEUTIL.reaction_fail( msg );
+                logger.error( error );
+            }
         }
     }
 

@@ -74,6 +74,7 @@ class Tip {
                             if ( txs.length > 0 ) {
                             const transaction = await TRANSACTION.sendTransaction( txs , userInfoSend.keystore_wallet);
                                 if ( transaction.length > 0 ) {
+                                    await MESSAGEUTIL.reaction_complete_tip( msg );
                                     await UTIL.receiveTx( transaction, msg, amount );
                                 } else {
                                     await MESSAGEUTIL.reaction_transaction_queue( msg );
@@ -102,7 +103,11 @@ class Tip {
                 };
             }
         } catch (error) {
-            logger.error( error );
+            if( error.code != 50007 ) {
+                await MESSAGEUTIL.reaction_fail( msg );
+                msg.author.send( msgs.tip_error );
+                logger.error( error );
+            }
         }
     }
 }
