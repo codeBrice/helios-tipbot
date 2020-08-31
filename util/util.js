@@ -143,6 +143,9 @@ class Util {
                     }
     
                 } else {
+                    transactionQueue.isProcessed = true;
+                    transactionQueue.attemps += 1;
+                    await TRANSACTIONQUEUECONTROLLER.update( transactionQueue.dataValues );
                     let fetchUser = await global.client.fetchUser( receive.user_discord_id_receive , false );
                     let title = ( transactionQueue.isTip ? 'Tip receive': 'Rain receive');
                     let titleDescription = ( transactionQueue.isTip ? ' tip you': ' rain you');
