@@ -60,6 +60,11 @@ class Account {
 
     async getBalance( msg ){
         try {
+            const userInfo = await userInfoController.getUser( msg.author.id );
+            if ( !userInfo ) {
+                await msg.author.send('You dont have a account.');
+                return;
+            }
             const userInfoBalance = await userInfoController.getBalance( msg.author.id );
             if ( userInfoBalance ) {
                 msg.author.send( MESSAGEUTIL.msg_embed('Balance' , msgs.balance + userInfoBalance + ' HLS') );
