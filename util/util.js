@@ -5,13 +5,14 @@ const MessageUtil = require('../util/Discord/message');
 const MESSAGEUTIL = new MessageUtil();
 const UserInfoController = require('../controllers/userinfo.controller');
 const USERINFO = new UserInfoController();
+const RouletteController = require('../controllers/roulette.controller');
 require('dotenv').config();
 const envConfig = process.env;
 const TransactionQueueController = require('../controllers/transaction.queue.controller');
 const TRANSACTIONQUEUECONTROLLER = new TransactionQueueController();
 const Transaction = require('../controllers/transactions.controller');
-const {Message} = require('discord.js');
 const TRANSACTION = new Transaction();
+const msgs = require('../util/msg.json');
 
 /**
  * Bot Utils
@@ -156,7 +157,7 @@ class Util {
    * @param {any} transactionQueue
    * @param {boolean} isRain=false
    */
-  async receiveTx( transaction, msg, amount, isQueue = false, transactionQueue, isRain = false ) {
+  async receiveTx( transaction, msg, amount, isQueue = false, transactionQueue, isRain = false, isRoulette = false ) {
     for ( const receive of transaction ) {
       if ( isQueue ) {
         await global.clientRedis.set( 'tip:'+receive.user_discord_id_send, receive.user_discord_id_send );
@@ -171,9 +172,14 @@ class Util {
             if ( !isQueue ) {
               const fetchUser = await global.client.fetchUser( receive.user_discord_id_receive, false );
               if ( !isRain ) {
-                await fetchUser.send(MESSAGEUTIL.msg_embed('Tip receive',
-                    'The user'+ msg.author + ' tip you `' + amount +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) );
+                if (receive.user_discord_id_receive !== msg.client.user.id) {
+                  await fetchUser.send(MESSAGEUTIL.msg_embed('Tip receive',
+                      'The user'+ msg.author + ' tip you `' + amount +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) );
+                }
                 await MESSAGEUTIL.reaction_complete_tip( msg );
+                if (msg.mentions.users.has(msg.client.user.id) && isRoulette) {
+                  await RouletteController.deposit(msg.author.id, amount);
+                }
               } else {
                 await fetchUser.send(MESSAGEUTIL.msg_embed('Rain receive',
                     'The user'+ msg.author + ' rain you `' + amount +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) );
@@ -198,7 +204,10 @@ class Util {
       }
     }
     if ( isQueue && transactionQueue.isProcessed ) {
-      await msg.clearReactions();
+      const isDm = this.isDmChannel( msg.channel.type );
+      if ( !isDm ) {
+        await msg.clearReactions();
+      }
       if ( transactionQueue.isTip ) {
         await MESSAGEUTIL.reaction_complete_tip( msg );
       }
@@ -225,25 +234,45 @@ class Util {
   }
 
   /**
-     * Balance Validator
-     * @date 2020-08-28
-     * @param {number} amount
-     * @param {Message} message
-     * @param {string} text
-     * @return {boolean}
-     */
-  static async balanceValidator( amount, message, text ) {
-    const getUserReceive = await USERINFO.getUser( message.author.id );
-    if ( !getUserReceive ) {
+ * roulette Balance Validator
+ * @date 2020-08-28
+ * @param {number} amount
+ * @param {Message} message
+ * @param {string} text
+ * @return {boolean}
+ */
+  static async rouletteBalanceValidator( amount, message, text ) {
+    const user = await USERINFO.getUser( message.author.id );
+    if ( !user ) {
       await USERINFO.generateUserWallet( message.author.id );
     }
-    const getTotalAmountWithGas = await USERINFO.getGasPriceSumAmount( amount );
-    const userAuthorBalance = await USERINFO.getBalance( message.author.id );
-    if ( getTotalAmountWithGas >= userAuthorBalance ) {
+    const userBalance = await RouletteController.getBalance(user.id);
+    if ( amount >= userBalance ) {
       message.author.send(text);
       MESSAGEUTIL.reaction_fail( message );
       return true;
     }
+  }
+
+  /**
+   * min Max Validator
+   * @date 2020-09-01
+   * @param {any} amount
+   * @param {any} msg
+   * @return {any}
+   */
+  static minMaxValidator( amount, msg ) {
+    if ( amount < envConfig.MINTIP ) {
+      msg.author.send( msgs.min_tip + '`(' + `${envConfig.MINTIP }` +' HLS)`');
+      MESSAGEUTIL.reaction_fail( msg );
+      return true;
+    }
+    if ( amount > envConfig.MAXTIP ) {
+      msg.author.send( msgs.max_tip + '`(' + `${envConfig.MAXTIP }` +' HLS)`');
+      MESSAGEUTIL.reaction_fail( msg );
+      return true;
+    }
+    return false;
   }
 }
 module.exports = Util;

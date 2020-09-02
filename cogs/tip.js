@@ -13,7 +13,7 @@ const Transaction = require('../controllers/transactions.controller');
 const TRANSACTION = new Transaction();
 
 class Tip {
-    async tip( msg, isSplit = false ){
+    async tip( msg, isSplit = false, isRoulette = false ){
         try {
             //console.log( ctx.args[2] );
             const isDm = UTIL.isDmChannel( msg.channel.type );
@@ -53,7 +53,7 @@ class Tip {
                             let user_tip_id_list = [];
 
                             for( let user of msg.mentions.users.array() ) {
-                                if ( user.id != msg.author.id && user.id != msg.client.user.id)
+                                if ( user.id != msg.author.id && (user.id != msg.client.user.id || isRoulette))
                                     user_tip_id_list.push( { user_discord_id: user.id, tag: user.tag } );
                             }
 
@@ -74,7 +74,7 @@ class Tip {
                             if ( txs.length > 0 ) {
                             const transaction = await TRANSACTION.sendTransaction( txs , userInfoSend.keystore_wallet);
                                 if ( transaction.length > 0 ) {
-                                    await UTIL.receiveTx( transaction, msg, amount );
+                                    await UTIL.receiveTx( transaction, msg, amount, false, null, false, isRoulette);
                                 } else {
                                     await MESSAGEUTIL.reaction_transaction_queue( msg );
                                     return;
