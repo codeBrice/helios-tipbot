@@ -287,6 +287,20 @@ class Util {
     }
     return false;
   }
+
+  /**
+   * channel Validator
+   * @date 2020-09-02
+   * @param {any} msg
+   * @param {any} channels
+   * @return {any}
+   */
+  static channelValidator( msg, channels ) {
+    if (!channels.includes(msg.channel.id)) {
+      return true;
+    }
+    return false;
+  }
 }
 
 module.exports = Util;

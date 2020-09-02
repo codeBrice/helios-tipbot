@@ -16,6 +16,11 @@ class Tip {
     async tip( msg, isSplit = false, isRoulette = false ){
         try {
             //console.log( ctx.args[2] );
+            if(isRoulette) {
+                const channels = JSON.parse(envConfig.ONLY_CHANNELS_ROULETTE);
+                if (Util.channelValidator(msg, channels)) return;
+            }
+
             const isDm = UTIL.isDmChannel( msg.channel.type );
             if ( isDm ) {
                 msg.author.send( msgs.server_message );

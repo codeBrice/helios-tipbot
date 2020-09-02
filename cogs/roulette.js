@@ -6,6 +6,7 @@ const logger = require(conf.pathLogger).getHeliosBotLogger();
 const RouletteController = require('../controllers/roulette.controller');
 const MessageUtil = require('../util/Discord/message');
 const MESSAGEUTIL = new MessageUtil();
+const envConfig = process.env;
 
 const red = '🟥';
 const black = '⬛';
@@ -22,6 +23,10 @@ exports.execute = async (message) => {
   try {
     const amount = Util.parseFloat( global.ctx.args[1] );
     const command = global.ctx.args[0];
+
+    // channel correct
+    const channels = JSON.parse(envConfig.ONLY_CHANNELS_ROULETTE);
+    if (Util.channelValidator(message, channels)) return;
 
     // min max validates
     if (Util.minMaxValidator(amount, message)) return;
