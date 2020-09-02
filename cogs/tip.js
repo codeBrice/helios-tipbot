@@ -13,14 +13,19 @@ const Transaction = require('../controllers/transactions.controller');
 const TRANSACTION = new Transaction();
 
 class Tip {
-    async tip( msg, isSplit = false ){
+    async tip( msg, isSplit = false, isRoulette = false ){
         try {
             //console.log( ctx.args[2] );
+            if(isRoulette) {
+                const channels = JSON.parse(envConfig.ONLY_CHANNELS_ROULETTE);
+                if (Util.channelValidator(msg, channels)) return;
+            }
+
             const isDm = UTIL.isDmChannel( msg.channel.type );
             if ( isDm ) {
                 msg.author.send( msgs.server_message );
             } else {
-                let amount = UTIL.parseFloat( global.ctx.args[1] );
+                let amount = Util.parseFloat( global.ctx.args[1] );
                 const userInfoSend = await USERINFO.getUser( msg.author.id );
 
                 if( !userInfoSend ) {
@@ -53,7 +58,7 @@ class Tip {
                             let user_tip_id_list = [];
 
                             for( let user of msg.mentions.users.array() ) {
-                                if ( user.id != msg.author.id && user.id != msg.client.user.id)
+                                if ( user.id != msg.author.id && (user.id != msg.client.user.id || isRoulette))
                                     user_tip_id_list.push( { user_discord_id: user.id, tag: user.tag } );
                             }
 
@@ -75,7 +80,7 @@ class Tip {
                             const transaction = await TRANSACTION.sendTransaction( txs , userInfoSend.keystore_wallet);
                                 if ( transaction.length > 0 ) {
                                     await MESSAGEUTIL.reaction_complete_tip( msg );
-                                    await UTIL.receiveTx( transaction, msg, amount );
+                                    await UTIL.receiveTx( transaction, msg, amount, false, null, false, isRoulette);
                                 } else {
                                     await MESSAGEUTIL.reaction_transaction_queue( msg );
                                     return;

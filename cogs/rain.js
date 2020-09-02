@@ -39,7 +39,7 @@ class Rain {
                 return;
             }
 
-            let amount = UTIL.parseFloat( global.ctx.args[1] );
+            let amount = Util.parseFloat( global.ctx.args[1] );
             if ( amount < envConfig.MIN_RAIN ) {
                 msg.author.send( msgs.min_rain + '`(' + `${envConfig.MIN_RAIN }` +' HLS)`');
                 MESSAGEUTIL.reaction_fail( msg );
