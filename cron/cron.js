@@ -99,6 +99,12 @@ exports.fnRunCrons = function () {
                             MESSAGEUTIL.reaction_complete_tip( msg );
                             return; 
                         }
+                        await msg.clearReactions();
+                        if ( transactionQueue.isRain ) {
+                            MESSAGEUTIL.reaction_complete_rain( msg );
+                        } else {
+                            MESSAGEUTIL.reaction_complete_tip( msg );
+                        }
                         await UTIL.receiveTx( transaction, msg, null, true, transactionQueue );
                     } else {
                         transactionQueue.attemps += 1;
@@ -117,7 +123,12 @@ exports.fnRunCrons = function () {
                 }
             }
         } catch (error) {
-            logger.error( error );
+            if( error.code != 50007 ) {
+                await msg.clearReactions();
+                await MESSAGEUTIL.reaction_fail( msg );
+                msg.author.send( msgs.queue_error );
+                logger.error( error );
+            }
         }
     });
     cronTransactionQueue.start();
