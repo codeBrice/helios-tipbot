@@ -3,6 +3,8 @@ const UserInfoDao = require('../dao/user.info.dao');
 const USERINFODAO = new UserInfoDao();
 const RouletteDao = require('../dao/roulette.dao');
 const ROULETTEDAO = new RouletteDao();
+const conf = require('../config.js').jsonConfig();
+const logger = require(conf.pathLogger).getHeliosBotLogger();
 
 /**
    * 描述
@@ -16,6 +18,7 @@ class RouletteController {
    * @return {any}
    */
   static async deposit( userDiscordId, amount ) {
+    logger.info('start deposit userDiscordId:'+userDiscordId+' amount:'+amount);
     const userInfo = await USERINFODAO.findByUserDiscordId( userDiscordId );
     if ( userInfo != null ) {
       let account = await ROULETTEDAO.findByUserDiscordId( userInfo.id );
@@ -37,6 +40,7 @@ class RouletteController {
    * @return {any}
    */
   static async getBalance( userDiscordId ) {
+    logger.info('start getBalance');
     const account = await ROULETTEDAO.findByUserDiscordId( userDiscordId );
     return parseFloat(account.helios_amount);
   }
@@ -50,6 +54,8 @@ class RouletteController {
    * @return {any}
    */
   static async updateBalance( userDiscordId, amount, isWinner) {
+    logger.info('start updateBalance userDiscordId:'+userDiscordId+
+      ' amount:'+amount+' isWinner:'+isWinner);
     const userInfo = await USERINFODAO.findByUserDiscordId( userDiscordId );
     if ( userInfo != null ) {
       let account = await ROULETTEDAO.findByUserDiscordId( userInfo.id );

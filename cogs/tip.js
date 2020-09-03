@@ -15,10 +15,17 @@ const TRANSACTION = new Transaction();
 class Tip {
     async tip( msg, isSplit = false, isRoulette = false ){
         try {
+            logger.info('start tip isSplit:'+
+                isSplit+' isRoulette:'+isRoulette);
             //console.log( ctx.args[2] );
             if(isRoulette) {
                 const channels = JSON.parse(envConfig.ONLY_CHANNELS_ROULETTE);
                 if (Util.channelValidator(msg, channels)) return;
+                if (msg.mentions.users.array().length > 1 ||
+                    !msg.mentions.users.has(msg.client.user.id)){
+                        await MESSAGEUTIL.reaction_fail( msg );
+                        return
+                    }
             }
 
             const isDm = UTIL.isDmChannel( msg.channel.type );
@@ -80,7 +87,7 @@ class Tip {
                             const transaction = await TRANSACTION.sendTransaction( txs , userInfoSend.keystore_wallet);
                                 if ( transaction.length > 0 ) {
                                     await MESSAGEUTIL.reaction_complete_tip( msg );
-                                    await UTIL.receiveTx( transaction, msg, amount, false, null, false, isRoulette);
+                                    await UTIL.receiveTx( transaction, msg, amount, false, null, false);
                                 } else {
                                     await MESSAGEUTIL.reaction_transaction_queue( msg );
                                     return;
