@@ -226,8 +226,14 @@ class Util {
           }
         }
       } else {
-        await fetchUser.send(MESSAGEUTIL.msg_embed('Transaction receive',
-            'The wallet '+ receiveTransaction.from + ' send you `' + await HELIOS.getAmountFloat(receiveTransaction.value) +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) );
+        const botData = await USERINFO.getUser( global.client.user.id );
+        if (receiveTransaction.from === botData.wallet) {
+          await fetchUser.send(MESSAGEUTIL.msg_embed('Transaction roulette receive',
+              'The Bot '+ global.client.user.username + ' send you `' + await HELIOS.getAmountFloat(receiveTransaction.value) +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) );
+        } else {
+          await fetchUser.send(MESSAGEUTIL.msg_embed('Transaction receive',
+              'The wallet '+ receiveTransaction.from + ' send you `' + await HELIOS.getAmountFloat(receiveTransaction.value) +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) );
+        }
       }
     } catch (error) {
       if ( error.code != 50007 ) {
@@ -262,12 +268,36 @@ class Util {
  */
   static async rouletteBalanceValidator( amount, message, text ) {
     logger.info('start rouletteBalanceValidator');
-    const user = await USERINFO.getUser( message.author.id );
+    let user = await USERINFO.getUser( message.author.id );
     if ( !user ) {
-      await USERINFO.generateUserWallet( message.author.id );
+      user = await USERINFO.generateUserWallet( message.author.id );
+      message.author.send(text);
+      MESSAGEUTIL.reaction_fail( message );
+      return true;
     }
     const userBalance = await RouletteController.getBalance(user.id);
     if ( amount >= userBalance ) {
+      message.author.send(text);
+      MESSAGEUTIL.reaction_fail( message );
+      return true;
+    }
+  }
+
+  /**
+ * bot Balance Validator
+ * @date 2020-08-28
+ * @param {number} amount
+ * @param {Message} message
+ * @param {string} text
+ * @return {boolean}
+ */
+  static async botBalanceValidator( amount, message, text ) {
+    logger.info('start botBalanceValidator');
+    const botBalance = await USERINFO.getBalance( message.client.user.id );
+    if ( !botBalance ) {
+      await USERINFO.generateUserWallet( message.client.user.id );
+    }
+    if ( amount >= this.parseFloat(botBalance) ) {
       message.author.send(text);
       MESSAGEUTIL.reaction_fail( message );
       return true;
@@ -309,6 +339,18 @@ class Util {
       return true;
     }
     return false;
+  }
+
+  /**
+  * wait
+  * @date 2020-09-03
+  * @param {any} ms
+  * @return {any}
+  */
+  static async wait(ms) {
+    return new Promise((resolve) => {
+      setTimeout(resolve, ms);
+    });
   }
 }
 

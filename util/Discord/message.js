@@ -70,5 +70,19 @@ class Message {
 
         return exampleEmbed;
     }
+
+    roulette_msg_embed_help() {
+        let exampleEmbed = new Discord.RichEmbed()
+        .setColor('#e6d46a')
+        .setTitle('Helios TipBot v1.0.0 roulette edition')
+        .setDescription('Use '+envConfig.ALIASCOMMAND+'rhelp command for more information about a specific command')
+        .addField(envConfig.ALIASCOMMAND+'rbalance '+envConfig.ALIASCOMMAND+'rbal '+ envConfig.ALIASCOMMAND+'rb ', 'Shows your roulette account balance')
+        .addField(envConfig.ALIASCOMMAND+'rt '+ envConfig.ALIASCOMMAND+'rthls ' + envConfig.ALIASCOMMAND+'rtip ', 'tip among mentioned bot Example: -rtip 1 @'+global.client.user.username)
+        .addField(envConfig.ALIASCOMMAND+'rwithdraw ', 'Withdraw HELIOS to main tip address')
+        .addField(envConfig.ALIASCOMMAND+'sr ', 'start bet on the color red')
+        .addField(envConfig.ALIASCOMMAND+'sb ', 'start bet on the color black')
+        .addField(envConfig.ALIASCOMMAND+'sg ', 'start bet on the color green')
+        return exampleEmbed;
+    }
 }
 module.exports = Message

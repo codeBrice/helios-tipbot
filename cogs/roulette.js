@@ -4,7 +4,10 @@ const msgs = require('../util/msg.json');
 const conf = require('../config.js').jsonConfig();
 const logger = require(conf.pathLogger).getHeliosBotLogger();
 const RouletteController = require('../controllers/roulette.controller');
+const RouletteHisController = require('../controllers/roulette.historic.controller');
 const MessageUtil = require('../util/Discord/message');
+const RouletteUser = require('../entities/RouletteUser');
+const {parseFloat} = require('../util/util');
 const MESSAGEUTIL = new MessageUtil();
 const envConfig = process.env;
 
@@ -43,67 +46,145 @@ exports.execute = async (message) => {
         global.client.config.PREFIX+'tip 10 @bot`')) return;
 
     // redis exist
-    global.clientRedis.exists('roulette'+message.author.id,
-        async (err, redisUser) => {
-          if ( !redisUser) {
-            global.clientRedis.set('roulette'+message.author.id, 'OK');
-            global.clientRedis.expire('roulette'+message.author.id, 10);
-          } else {
-            MESSAGEUTIL.reaction_fail( message );
-            return;
-          }
-          await rouletteLogic(message, amount, command);
-          global.clientRedis.del('roulette'+message.author.id);
-        });
+    global.clientRedis.get('roulette'+message.guild.id, async (err, redisUser) => {
+      if (redisUser == null) {
+        const roulette = {
+          'start': false,
+          'users': [new RouletteUser(message.author.id,
+              message.author.username, amount, command)],
+        };
+        const discordId = JSON.stringify(roulette);
+        global.clientRedis.set('roulette'+message.guild.id, discordId);
+        await message.react('🎲');
+        global.clientRedis.expire('roulette'+message.guild.id, 20);
+        rouletteInit(message);
+      } else {
+        const roulette = JSON.parse(redisUser);
+        if (roulette.users.filter((x) =>
+          x.discordId === String(message.author.id)).length > 0 ||
+          roulette.start == true) {
+          MESSAGEUTIL.reaction_fail( message );
+          return;
+        }
+        roulette.users.push(
+            new RouletteUser(message.author.id,
+                message.author.username, amount, command));
+
+        const discordIds = JSON.stringify(roulette);
+        global.clientRedis.set('roulette'+message.guild.id, discordIds);
+        await message.react('🎲');
+      }
+    });
   } catch (error) {
     console.log(error);
   }
 };
 
 /**
- * 描述
+ * rouletteInit
  * @date 2020-09-01
  * @param {Message} message
- * @param {number} amount
- * @param {string} command
  */
-async function rouletteLogic(message, amount, command) {
-  const numberRoulette = Math.floor(Math.random() * (14 - 0)) + 0;
-  console.log('--> Rolled ' + numberRoulette + ' in roulette');
-  const initialText = '⬛🟥⬛🟥🟩⬛🟥⬛🟥';
-  const title = 'Roulette #0000';
-  let lastText;
-  let wonText;
-  // Start message
-  let embed = embedConstructor(title, top + '\n' + initialText);
-  const msg = await message.channel.send(embed);
+async function rouletteInit(message) {
+  await Util.wait(10000);
+  global.clientRedis.get('roulette'+message.guild.id, async (err, redisUser) => {
+    if (redisUser != null) {
+      const roulette = JSON.parse(redisUser);
+      if (roulette.start == true) {
+        MESSAGEUTIL.reaction_fail( message );
+        return;
+      }
+      roulette.start = true;
+      const discordId = JSON.stringify(roulette);
+      global.clientRedis.set('roulette'+message.guild.id, discordId);
+      await rouletteLogic(message, roulette.users);
+      global.clientRedis.del('roulette'+message.guild.id);
+    } else {
+      await message.channel.send('Error');
+      global.clientRedis.del('roulette'+message.guild.id);
+    }
+  });
+}
 
-  // Travel message
-  for (let i = 0; i <= 14; i++) {
-    lastText = editRoulette(msg, i, title);
-    if (numberRoulette == i+1) break;
+/**
+ * rouletteLogic
+ * @date 2020-09-04
+ * @param {any} message
+ * @param {any} usersRoulette
+ * @return {any}
+ */
+async function rouletteLogic(message, usersRoulette) {
+  try {
+    const numberRoulette = Math.floor(Math.random() * (14 - 0)) + 0;
+    const idRoulette = await RouletteHisController.init(
+        JSON.stringify(usersRoulette), numberRoulette, false );
+
+    logger.info('--> Rolled ' + numberRoulette + ' in roulette');
+    const initialText = '⬛🟥⬛🟥🟩⬛🟥⬛🟥';
+    const title = 'Roulette #'+idRoulette.id;
+    let lastText;
+    let wonText = '';
+    // Start message
+    let embed = embedConstructor(title, top + '\n' + initialText);
+    const msg = await message.channel.send(embed);
+
+    // Travel message
+    for (let i = 0; i <= 14; i++) {
+      lastText = await editRoulette(msg, i, title);
+      await Util.wait(800);
+      if (numberRoulette == i+1) break;
+    }
+
+    // Wom message
+
+    if (usersRoulette.some((user) =>
+      user.command === color(numberRoulette, 'sg', 'sr', 'sb'))) {
+      logger.info('won roulette');
+
+      for (const user of usersRoulette) {
+        user.amount = Util.parseFloat(user.amount);
+
+        if (user.command === color(numberRoulette, 'sg', 'sr', 'sb')) {
+          const winnerAmount = (user.command !== 'sg') ?
+          String(user.amount*2) : String(user.amount*14);
+
+          wonText += '💰'+user.userName+' won '.concat(winnerAmount +' HLS'+ '\n');
+
+          await rouletteWinner(parseFloat(winnerAmount) - user.amount,
+              user.discordId, true);
+        } else {
+          await rouletteWinner(user.amount, user.discordId, false);
+        }
+      }
+      embed = embedConstructor(title, top+'\n'+lastText+'\n\n'+
+                color(numberRoulette, green, red, black)+' '+
+                color(numberRoulette, 'Green', 'Red', 'Black')+
+                ' WON!!!' + '\n\n' +
+                wonText);
+    } else {
+      logger.info('no wom roulette');
+      wonText = 'No winners, better luck next time :(';
+      for (const user of usersRoulette) {
+        user.amount = Util.parseFloat(user.amount);
+        await rouletteWinner(user.amount, user.discordId, false);
+      }
+
+      embed = embedConstructor(title, top+'\n'+lastText+'\n\n'+
+                color(numberRoulette, green, red, black)+' '+
+                color(numberRoulette, 'Green', 'Red', 'Black')+
+                ' WON!!!' + '\n\n' +
+                wonText);
+    }
+
+    await RouletteHisController.updateHistoric(idRoulette.id, true);
+
+    await msg.edit(embed);
+    logger.info('finish roulette');
+  } catch (error) {
+    await message.channel.send('Error');
+    global.clientRedis.del('roulette'+message.guild.id);
+    logger.error(error);
   }
-
-  // Wom message
-  if (command === color(numberRoulette, 'sg', 'sr', 'sb')) {
-    logger.info('won roulette');
-    const winnerAmount = (command !== 'sg')?String(amount*2) : String(amount*5);
-    wonText = message.author.username+' won '.concat(winnerAmount +' HLS');
-    await rouletteWinner(parseFloat(winnerAmount) - amount,
-        message.author.id, true);
-  } else {
-    logger.info('no wom roulette');
-    wonText = 'No Wom :(';
-    await rouletteWinner(amount, message.author.id, false);
-  }
-  embed = embedConstructor(title, top+'\n'+lastText+'\n\n'+
-              color(numberRoulette, green, red, black)+' '+
-              color(numberRoulette, 'Green', 'Red', 'Black')+
-              ' WON!!!' + '\n\n' +
-              wonText);
-
-  await msg.edit(embed);
-  logger.info('finish roulette');
 }
 
 /**
@@ -114,7 +195,7 @@ async function rouletteLogic(message, amount, command) {
  * @param {string} title
  * @return {string}
  */
-function editRoulette(msg, i, title) {
+async function editRoulette(msg, i, title) {
   try {
     let text = '';
     let init;
@@ -126,7 +207,8 @@ function editRoulette(msg, i, title) {
       init++;
     }
     const embed = embedConstructor(title, top + '\n' + text);
-    msg.edit(embed);
+    logger.info(text);
+    await msg.edit(embed);
     return text;
   } catch (error) {
     logger.error(error);

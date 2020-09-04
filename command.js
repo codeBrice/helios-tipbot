@@ -83,6 +83,10 @@ class Command {
         case 'sb':
           roulette.execute(msg);
           break;
+        case 'rhelp':
+          await msg.author.send( MESSAGEUTIL.roulette_msg_embed_help() );
+          MESSAGEUTIL.reaction_dm( msg );
+          break;
         default:
           break;
       }
