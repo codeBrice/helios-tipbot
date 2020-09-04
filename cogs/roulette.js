@@ -46,7 +46,7 @@ exports.execute = async (message) => {
         global.client.config.PREFIX+'tip 10 @bot`')) return;
 
     // redis exist
-    global.clientRedis.get('roulette', async (err, redisUser) => {
+    global.clientRedis.get('roulette'+message.guild.id, async (err, redisUser) => {
       if (redisUser == null) {
         const roulette = {
           'start': false,
@@ -54,8 +54,9 @@ exports.execute = async (message) => {
               message.author.username, amount, command)],
         };
         const discordId = JSON.stringify(roulette);
-        global.clientRedis.set('roulette', discordId);
-        global.clientRedis.expire('roulette', 20);
+        global.clientRedis.set('roulette'+message.guild.id, discordId);
+        await message.react('🎲');
+        global.clientRedis.expire('roulette'+message.guild.id, 20);
         rouletteInit(message);
       } else {
         const roulette = JSON.parse(redisUser);
@@ -70,7 +71,8 @@ exports.execute = async (message) => {
                 message.author.username, amount, command));
 
         const discordIds = JSON.stringify(roulette);
-        global.clientRedis.set('roulette', discordIds);
+        global.clientRedis.set('roulette'+message.guild.id, discordIds);
+        await message.react('🎲');
       }
     });
   } catch (error) {
@@ -85,7 +87,7 @@ exports.execute = async (message) => {
  */
 async function rouletteInit(message) {
   await Util.wait(10000);
-  global.clientRedis.get('roulette', async (err, redisUser) => {
+  global.clientRedis.get('roulette'+message.guild.id, async (err, redisUser) => {
     if (redisUser != null) {
       const roulette = JSON.parse(redisUser);
       if (roulette.start == true) {
@@ -94,12 +96,12 @@ async function rouletteInit(message) {
       }
       roulette.start = true;
       const discordId = JSON.stringify(roulette);
-      global.clientRedis.set('roulette', discordId);
+      global.clientRedis.set('roulette'+message.guild.id, discordId);
       await rouletteLogic(message, roulette.users);
-      global.clientRedis.del('roulette');
+      global.clientRedis.del('roulette'+message.guild.id);
     } else {
       await message.channel.send('Error');
-      global.clientRedis.del('roulette');
+      global.clientRedis.del('roulette'+message.guild.id);
     }
   });
 }
@@ -146,7 +148,7 @@ async function rouletteLogic(message, usersRoulette) {
           const winnerAmount = (user.command !== 'sg') ?
           String(user.amount*2) : String(user.amount*14);
 
-          wonText += user.userName+' won '.concat(winnerAmount +' HLS'+ '\n');
+          wonText += '💰'+user.userName+' won '.concat(winnerAmount +' HLS'+ '\n');
 
           await rouletteWinner(parseFloat(winnerAmount) - user.amount,
               user.discordId, true);
@@ -180,7 +182,7 @@ async function rouletteLogic(message, usersRoulette) {
     logger.info('finish roulette');
   } catch (error) {
     await message.channel.send('Error');
-    global.clientRedis.del('roulette');
+    global.clientRedis.del('roulette'+message.guild.id);
     logger.error(error);
   }
 }
