@@ -23,5 +23,6 @@
     "amount_gas_error": "You are trying to withdraw a higher sum than your balance",
     "not_wallet": "You don't have a registered wallet, please write .register to create one.",
     "tip_error": "An error has occurred in the tip.",
-    "queue_error": "An error has occurred in the queue."
+    "queue_error": "An error has occurred in the queue.",
+    "bot_amount_gas_error": "You are trying to withdraw a higher sum than Bot balance. Contact Admin."
 }

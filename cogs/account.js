@@ -80,28 +80,28 @@ class Account {
    * @param {any} msg
    * @return {any}
    */
-    async getBalance( msg ){
-        try {
-            const userInfo = await userInfoController.getUser( msg.author.id );
-            if ( !userInfo ) {
-                await msg.author.send('You dont have a account.');
-                return;
-            }
-            const userInfoBalance = await userInfoController.getBalance( msg.author.id );
-            if ( userInfoBalance ) {
-                msg.author.send( MESSAGEUTIL.msg_embed('Balance' , msgs.balance + userInfoBalance + ' HLS') );
-                const isDm = UTIL.isDmChannel( msg.channel.type );
-                if ( !isDm ){
-                    MESSAGEUTIL.reaction_dm( msg );
-                }
-            } else {
-                msg.author.send( msgs.balance_error );
-                logger.error( error );
-            }
-        } catch (error) {
-            logger.error( error );
+  async getBalance( msg ) {
+    try {
+      const userInfo = await userInfoController.getUser( msg.author.id );
+      if ( !userInfo ) {
+        await msg.author.send('You dont have a account.');
+        return;
+      }
+      const userInfoBalance = await userInfoController.getBalance( msg.author.id );
+      if ( userInfoBalance ) {
+        msg.author.send( MESSAGEUTIL.msg_embed('Balance', msgs.balance + userInfoBalance + ' HLS') );
+        const isDm = UTIL.isDmChannel( msg.channel.type );
+        if ( !isDm ) {
+          MESSAGEUTIL.reaction_dm( msg );
         }
+      } else {
+        msg.author.send( msgs.balance_error );
+        logger.error( error );
+      }
+    } catch (error) {
+      logger.error( error );
     }
+  }
   /**
    * getWallet
    * @date 2020-09-01
@@ -219,6 +219,9 @@ class Account {
       const user = await userInfoController.getUser( msg.author.id );
       if ( !user ) {
         await userInfoController.generateUserWallet( msg.author.id );
+        msg.author.send( MESSAGEUTIL.msg_embed('Roulette Balance',
+            msgs.balance + 0 + ' HLS') );
+        return;
       }
       const userBalance = await RouletteController.getBalance(user.id);
       if ( userBalance ) {
@@ -254,26 +257,52 @@ class Account {
             msgs.amount_gas_error +
             ', remember to have enough gas for the transaction.')) return;
 
+        if (await Util.botBalanceValidator(amountGas, msg,
+            msgs.bot_amount_gas_error)) return;
+
         const userTipIdList = [];
-        const userSend = await userInfoController.getUser( msg.client.user.id );
+        const botData = await userInfoController.getUser( msg.client.user.id );
         userTipIdList.push( {user_discord_id: msg.author.id,
           tag: msg.author.username} );
         // transaction object
-        let txs = [];
-        txs = await UTIL.arrayTransaction( msg, userTipIdList, userSend, amount, true, false );
-        await RouletteController.updateBalance(msg.author.id, amountGas, false);
-        if ( txs.length > 0 ) {
-          const transaction = await TRANSACTIONCONTROLLER.sendTransaction( txs, userSend.keystore_wallet);
-          if ( transaction.length > 0 ) {
-            await UTIL.receiveTx( transaction, msg, amount, false, null, false, false);
-          } else {
-            await MESSAGEUTIL.reaction_transaction_queue( msg );
-            return;
-          }
-        } else {
-          await MESSAGEUTIL.reaction_transaction_queue( msg );
+        const toUser = await userInfoController.getUser( msg.author.id );
+        const tx = [];
+        const transactionEntitie = new SendTransaction();
+        transactionEntitie.from = botData.wallet;
+        transactionEntitie.to = toUser.wallet;
+        transactionEntitie.gasPrice = await HELIOS.toWei(String(await HELIOS.getGasPrice()));
+        transactionEntitie.gas = envConfig.GAS;
+        transactionEntitie.value = await HELIOS.toWeiEther((String(amount)));
+        transactionEntitie.keystore_wallet = botData.keystore_wallet;
+        tx.push( transactionEntitie );
+        const getReceive = await new Promise( ( resolve, reject ) => {
+          return global.clientRedis.get('receive:'+msg.author.id, async function(err, receive) {
+            resolve(receive);
+          });
+        });
+        const getTip = await new Promise( ( resolve, reject ) => {
+          return global.clientRedis.get('tip:'+msg.author.id, async function(err, tip) {
+            resolve(tip);
+          });
+        });
+        if ( getReceive || getTip) {
+          await TRANSACTIONQUEUECONTROLLER.create( tx, msg, false, false);
+          MESSAGEUTIL.reaction_transaction_queue( msg );
           return;
         }
+        const sendTx = await TRANSACTIONCONTROLLER.sendTransaction( tx, botData.keystore_wallet);
+        if ( !sendTx.length ) {
+          global.clientRedis.set( 'tip:'+msg.author.id, msg.author.id );
+          global.clientRedis.expire('tip:'+msg.author.id, 11);
+          msg.author.send( msgs.error_withdraw + envConfig.ALIASCOMMAND + 'withdraw 100 0x00000' );
+          logger.error( error );
+        } else {
+          await RouletteController.updateBalance(msg.author.id, amountGas, false);
+          msg.author.send(MESSAGEUTIL.msg_embed('Withdraw process', msgs.withdraw_success));
+        }
+      } else {
+        msg.delete( msg );
+        msg.author.send( msgs.direct_message + ' (`rwithdraw`)' );
       }
     } catch (error) {
       logger.error( error );

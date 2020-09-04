@@ -16,7 +16,7 @@ const Util = require('../util/util');
 const UTIL = new Util();
 
 exports.fnRunCrons = function () {
-    let cronReceive = cron.job("22 */10 * * * *", async function(){
+    let cronReceive = cron.job("22 */5 * * * *", async function(){
         logger.info('Start receive tx with external cron');
         const users = await USERINFO.findAllUser();
         if ( users.length ) {
@@ -38,8 +38,14 @@ exports.fnRunCrons = function () {
                 if( receiveTx.length ) {
                     for( let receive of receiveTx ) {
                         let fetchUser = await global.client.fetchUser( user.user_discord_id , false );
-                        await fetchUser.send(MESSAGEUTIL.msg_embed('Transaction receive',
-                            'The wallet '+ receive.from + ' send you `' + await HELIOS.getAmountFloat(receive.value)  +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receive.hash}`) ); 
+                        const botData = await USERINFO.getUser( global.client.user.id );
+                        if (receive.from === botData.wallet) {
+                            await fetchUser.send(MESSAGEUTIL.msg_embed('Transaction roulette receive',
+                                'The Bot '+ global.client.user.username + ' send you `' + await HELIOS.getAmountFloat(receive.value)  +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receive.hash}`) ); 
+                        } else {
+                            await fetchUser.send(MESSAGEUTIL.msg_embed('Transaction receive',
+                                'The wallet '+ receive.from + ' send you `' + await HELIOS.getAmountFloat(receive.value)  +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receive.hash}`) ); 
+                        }
                     }
                 }
             }
