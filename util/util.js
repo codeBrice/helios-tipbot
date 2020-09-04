@@ -158,10 +158,9 @@ class Util {
    * @param {any} isQueue=false
    * @param {any} transactionQueue
    * @param {any} isRain=false
-   * @param {any} isRoulette=false
    * @return {any}
    */
-  async receiveTx( transaction, msg, amount, isQueue = false, transactionQueue, isRain = false, isRoulette = false ) {
+  async receiveTx( transaction, msg, amount, isQueue = false, transactionQueue, isRain = false) {
     for ( const receive of transaction ) {
       if ( isQueue ) {
         await global.clientRedis.set( 'tip:'+receive.user_discord_id_send, receive.user_discord_id_send );
@@ -172,7 +171,7 @@ class Util {
       if ( receiveTx.length > 0 ) {
         for ( const receiveTransaction of receiveTx ) {
           const isWalletBot = await USERINFO.findByWallet( receiveTransaction.from );
-          this.sendMsgReceive( isQueue, isRain, isWalletBot, msg, amount, transactionQueue, receiveTx, receive, isRoulette );
+          this.sendMsgReceive( isQueue, isRain, isWalletBot, msg, amount, transactionQueue, receiveTx, receive);
         }
       }
     }
@@ -189,20 +188,21 @@ class Util {
    * @param {any} transactionQueue
    * @param {any} receiveTx
    * @param {any} receive
-   * @param {any} isRoulette=false
    * @return {any}
    */
-  async sendMsgReceive( isQueue, isRain, isWalletBot, msg, amount, transactionQueue, receiveTx, receive, isRoulette = false ) {
+  async sendMsgReceive( isQueue, isRain, isWalletBot, msg, amount, transactionQueue, receiveTx, receive) {
     try {
       const fetchUser = await global.client.fetchUser( receive.user_discord_id_receive, false );
       if ( isWalletBot ) {
+        logger.info('init sendMsgReceive isQueue:'+isQueue+' isRain:'+isRain);
         if ( !isQueue ) {
           if ( !isRain ) {
             if (receive.user_discord_id_receive !== msg.client.user.id) {
               await fetchUser.send(MESSAGEUTIL.msg_embed('Tip receive',
                   'The user'+ msg.author + ' tip you `' + amount +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) );
             }
-            if (msg.mentions.users.has(msg.client.user.id) && isRoulette) {
+            if (msg.mentions.users.has(msg.client.user.id) && msg.mentions.users.array().length === 1) {
+              logger.info('init deposit roulette');
               await RouletteController.deposit(msg.author.id, amount);
             }
           } else {
@@ -216,8 +216,14 @@ class Util {
           const fetchUser = await global.client.fetchUser( receive.user_discord_id_receive, false );
           const title = ( transactionQueue.isTip ? 'Tip receive': 'Rain receive');
           const titleDescription = ( transactionQueue.isTip ? ' tip you': ' rain you');
-          await fetchUser.send(MESSAGEUTIL.msg_embed(title,
-              'The user'+ msg.author + titleDescription +' `' + receive.helios_amount +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) );
+          if (receive.user_discord_id_receive !== msg.client.user.id) {
+            await fetchUser.send(MESSAGEUTIL.msg_embed(title,
+                'The user'+ msg.author + titleDescription +' `' + receive.helios_amount +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) );
+          }
+          if (msg.mentions.users.has(msg.client.user.id) && msg.mentions.users.array().length === 1) {
+            logger.info('init deposit roulette');
+            await RouletteController.deposit(msg.author.id, receive.helios_amount);
+          }
         }
       } else {
         await fetchUser.send(MESSAGEUTIL.msg_embed('Transaction receive',
@@ -255,6 +261,7 @@ class Util {
  * @return {boolean}
  */
   static async rouletteBalanceValidator( amount, message, text ) {
+    logger.info('start rouletteBalanceValidator');
     const user = await USERINFO.getUser( message.author.id );
     if ( !user ) {
       await USERINFO.generateUserWallet( message.author.id );
@@ -296,6 +303,8 @@ class Util {
    * @return {any}
    */
   static channelValidator( msg, channels ) {
+    logger.info('Channel validator channels:'+
+      channels.toString()+' channel id:'+msg.channel.id);
     if (!channels.includes(msg.channel.id)) {
       return true;
     }

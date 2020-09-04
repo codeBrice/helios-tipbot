@@ -24,6 +24,7 @@ exports.execute = async (message) => {
     const amount = Util.parseFloat( global.ctx.args[1] );
     const command = global.ctx.args[0];
 
+    logger.info('Start roulette');
     // channel correct
     const channels = JSON.parse(envConfig.ONLY_CHANNELS_ROULETTE);
     if (Util.channelValidator(message, channels)) return;
@@ -85,11 +86,13 @@ async function rouletteLogic(message, amount, command) {
 
   // Wom message
   if (command === color(numberRoulette, 'sg', 'sr', 'sb')) {
+    logger.info('won roulette');
     const winnerAmount = (command !== 'sg')?String(amount*2) : String(amount*5);
     wonText = message.author.username+' won '.concat(winnerAmount +' HLS');
     await rouletteWinner(parseFloat(winnerAmount) - amount,
         message.author.id, true);
   } else {
+    logger.info('no wom roulette');
     wonText = 'No Wom :(';
     await rouletteWinner(amount, message.author.id, false);
   }
@@ -100,6 +103,7 @@ async function rouletteLogic(message, amount, command) {
               wonText);
 
   await msg.edit(embed);
+  logger.info('finish roulette');
 }
 
 /**

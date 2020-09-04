@@ -215,6 +215,7 @@ class Account {
    */
   async getRouletteBalance( msg ) {
     try {
+      logger.info('start getRouletteBalance');
       const user = await userInfoController.getUser( msg.author.id );
       if ( !user ) {
         await userInfoController.generateUserWallet( msg.author.id );
@@ -244,6 +245,7 @@ class Account {
    */
   async withdrawRoulette( msg ) {
     try {
+      logger.info('start withdrawRoulette');
       if ( UTIL.isDmChannel(msg.channel.type) ) {
         const amount = Util.parseFloat( global.ctx.args[1] );
         const amountGas = await userInfoController.getGasPriceSumAmount( amount );
