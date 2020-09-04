@@ -1,24 +1,25 @@
 const conf = require('../config.js').jsonConfig();
 const logger = require(conf.pathLogger).getHeliosBotLogger();
-const {roulettes} = require('../models');
+const {roulette_historic} = require('../models');
 /**
-   * RouletteDao
+   * RouletteHistoricDao
    * @date 2020-09-01
    */
-class RouletteDao {
+class RouletteHistoricDao {
   /**
-   * create balance roluette
-   * @date 2020-09-01
-   * @param {any} userDiscordId
-   * @param {any} amount
-   * @return {any}
+   * create
+   * @date 2020-09-04
+   * @param {any} json
+   * @param {any} number
+   * @param {any} isFinish
+   * @retunpx sequelize-cli db:migratern {any}
    */
-  async create( userDiscordId, amount) {
+  async create( json, number, isFinish) {
     try {
-      return roulettes.create({
-        user_info_id: userDiscordId,
-        helios_amount: amount,
-
+      return roulette_historic.create({
+        bets: json,
+        winNumber: number,
+        isFinish: isFinish,
       });
     } catch (error) {
       logger.error( error );
@@ -31,9 +32,9 @@ class RouletteDao {
    * @param {any} userDiscordId
    * @return {any}
    */
-  async findByUserDiscordId( userDiscordId ) {
+  async findId( userDiscordId ) {
     try {
-      return roulettes.findOne({
+      return roulette_historic.findOne({
         where: {
           user_info_id: userDiscordId,
         },
@@ -46,18 +47,18 @@ class RouletteDao {
   /**
    * update
    * @date 2020-09-01
-   * @param {any} userDiscordId
-   * @param {any} amount
+   * @param {any} id
+   * @param {any} isFinish
    * @return {any}
    */
-  async update( userDiscordId, amount) {
+  async update( id, isFinish) {
     try {
-      return roulettes.update({
-        helios_amount: amount,
+      return roulette_historic.update({
+        isFinish: isFinish,
       },
       {
         where: {
-          user_info_id: userDiscordId,
+          id: id,
         },
       });
     } catch (error) {
@@ -66,4 +67,4 @@ class RouletteDao {
   }
 }
 
-module.exports = RouletteDao;
+module.exports = RouletteHistoricDao;

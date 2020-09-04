@@ -4,6 +4,7 @@ const msgs = require('../util/msg.json');
 const conf = require('../config.js').jsonConfig();
 const logger = require(conf.pathLogger).getHeliosBotLogger();
 const RouletteController = require('../controllers/roulette.controller');
+const RouletteHisController = require('../controllers/roulette.historic.controller');
 const MessageUtil = require('../util/Discord/message');
 const RouletteUser = require('../entities/RouletteUser');
 const {parseFloat} = require('../util/util');
@@ -113,9 +114,12 @@ async function rouletteInit(message) {
 async function rouletteLogic(message, usersRoulette) {
   try {
     const numberRoulette = Math.floor(Math.random() * (14 - 0)) + 0;
+    const idRoulette = await RouletteHisController.init(
+        JSON.stringify(usersRoulette), numberRoulette, false );
+
     logger.info('--> Rolled ' + numberRoulette + ' in roulette');
     const initialText = '⬛🟥⬛🟥🟩⬛🟥⬛🟥';
-    const title = 'Roulette #0000';
+    const title = 'Roulette #'+idRoulette.id;
     let lastText;
     let wonText = '';
     // Start message
@@ -169,6 +173,8 @@ async function rouletteLogic(message, usersRoulette) {
                 ' WON!!!' + '\n\n' +
                 wonText);
     }
+
+    await RouletteHisController.updateHistoric(idRoulette.id, true);
 
     await msg.edit(embed);
     logger.info('finish roulette');
