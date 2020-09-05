@@ -96,7 +96,6 @@ class Account {
         }
       } else {
         msg.author.send( msgs.balance_error );
-        logger.error( error );
       }
     } catch (error) {
       logger.error( error );
@@ -120,7 +119,6 @@ class Account {
       } else {
         msg.author.send( msgs.wallet_error);
         MESSAGEUTIL.reaction_fail( msg );
-        logger.error( error );
       }
     } catch (error) {
       msg.author.send( msgs.wallet_error);
@@ -224,7 +222,7 @@ class Account {
         return;
       }
       const userBalance = await RouletteController.getBalance(user.id);
-      if ( userBalance ) {
+      if ( userBalance != null ) {
         msg.author.send( MESSAGEUTIL.msg_embed('Roulette Balance',
             msgs.balance + userBalance + ' HLS') );
         const isDm = UTIL.isDmChannel( msg.channel.type );
@@ -233,7 +231,6 @@ class Account {
         }
       } else {
         msg.author.send( msgs.balance_error );
-        logger.error( error );
       }
     } catch (error) {
       logger.error( error );
@@ -251,6 +248,10 @@ class Account {
       logger.info('start withdrawRoulette');
       if ( UTIL.isDmChannel(msg.channel.type) ) {
         const amount = Util.parseFloat( global.ctx.args[1] );
+        // Amount Validate
+        if (Util.amountValidator(amount, msg, msgs.invalid_command+
+          ` example: ${global.client.config.PREFIX}rwithdraw 10`)) return;
+
         const amountGas = await userInfoController.getGasPriceSumAmount( amount );
 
         if (await Util.rouletteBalanceValidator(amountGas, msg,

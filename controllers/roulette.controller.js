@@ -41,7 +41,10 @@ class RouletteController {
    */
   static async getBalance( userDiscordId ) {
     logger.info('start getBalance');
-    const account = await ROULETTEDAO.findByUserDiscordId( userDiscordId );
+    let account = await ROULETTEDAO.findByUserDiscordId( userDiscordId );
+    if (account == null) {
+      account = await ROULETTEDAO.create( userDiscordId, 0 );
+    }
     return parseFloat(account.helios_amount);
   }
 

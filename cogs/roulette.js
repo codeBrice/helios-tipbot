@@ -56,7 +56,7 @@ exports.execute = async (message) => {
         const discordId = JSON.stringify(roulette);
         global.clientRedis.set('roulette'+message.guild.id, discordId);
         await message.react('🎲');
-        global.clientRedis.expire('roulette'+message.guild.id, 20);
+        global.clientRedis.expire('roulette'+message.guild.id, 60);
         rouletteInit(message);
       } else {
         const roulette = JSON.parse(redisUser);
@@ -86,7 +86,7 @@ exports.execute = async (message) => {
  * @param {Message} message
  */
 async function rouletteInit(message) {
-  await Util.wait(10000);
+  await Util.wait(Util.parseFloat(envConfig.TIME_BET));
   global.clientRedis.get('roulette'+message.guild.id, async (err, redisUser) => {
     if (redisUser != null) {
       const roulette = JSON.parse(redisUser);
