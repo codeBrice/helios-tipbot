@@ -15,6 +15,8 @@ const TRANSACTION = new Transaction();
 const conf = require('../config.js').jsonConfig();
 const logger = require(conf.pathLogger).getHeliosBotLogger();
 const msgs = require('../util/msg.json');
+const RouletteHistoricController = require('../controllers/roulette.historic.controller');
+const Discord = require('discord.js');
 
 /**
  * Bot Utils
@@ -228,8 +230,8 @@ class Util {
       } else {
         const botData = await USERINFO.getUser( global.client.user.id );
         if (receiveTransaction.from === botData.wallet) {
-          await fetchUser.send(MESSAGEUTIL.msg_embed('Transaction roulette receive',
-              'The Bot '+ global.client.user.username + ' send you `' + await HELIOS.getAmountFloat(receiveTransaction.value) +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) );
+          await fetchUser.send(MESSAGEUTIL.msg_embed('Roulette transaction recieved',
+              'The '+ global.client.user.username + ' Bot sent you `' + await HELIOS.getAmountFloat(receiveTransaction.value) +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) );
         } else {
           await fetchUser.send(MESSAGEUTIL.msg_embed('Transaction receive',
               'The wallet '+ receiveTransaction.from + ' send you `' + await HELIOS.getAmountFloat(receiveTransaction.value) +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) );
@@ -276,7 +278,7 @@ class Util {
       return true;
     }
     const userBalance = await RouletteController.getBalance(user.id);
-    if ( amount >= userBalance ) {
+    if ( amount > userBalance ) {
       message.author.send(text);
       MESSAGEUTIL.reaction_fail( message );
       return true;
@@ -311,14 +313,14 @@ class Util {
    * @param {any} msg
    * @return {any}
    */
-  static minMaxValidator( amount, msg ) {
-    if ( amount < envConfig.MINTIP ) {
-      msg.author.send( msgs.min_tip + '`(' + `${envConfig.MINTIP }` +' HLS)`');
+  static minMaxValidatorRoulette( amount, msg ) {
+    if ( amount < envConfig.MINTIP_BET ) {
+      msg.author.send( msgs.min_tip_roulette + '`(' + `${envConfig.MINTIP_BET }` +' HLS)`');
       MESSAGEUTIL.reaction_fail( msg );
       return true;
     }
-    if ( amount > envConfig.MAXTIP ) {
-      msg.author.send( msgs.max_tip + '`(' + `${envConfig.MAXTIP }` +' HLS)`');
+    if ( amount > envConfig.MAXTIP_BET ) {
+      msg.author.send( msgs.max_tip_roulette + '`(' + `${envConfig.MAXTIP_BET }` +' HLS)`');
       MESSAGEUTIL.reaction_fail( msg );
       return true;
     }
@@ -339,6 +341,125 @@ class Util {
       return true;
     }
     return false;
+  }
+
+  /**
+   * bankroll Validator
+   * @date 2020-09-06
+   * @param {any} bets
+   * @param {any} message
+   * @param {any} win
+   * @param {any} text
+   * @return {any}
+   */
+  static async bankrollValidator( bets, message, win, text ) {
+    logger.info('start bankroll Validator');
+    const botBalance = await USERINFO.getBalance( message.client.user.id );
+
+    if ( !botBalance ) {
+      await USERINFO.generateUserWallet( message.client.user.id );
+      message.channel.send(text);
+      return true;
+    }
+
+    let sum = 0;
+    for (const bet of bets) {
+      if (bet.command === win) {
+        sum += this.winnerAmount(bet.command, bet.amount) - bet.amount;
+      }
+    }
+
+    const total = await RouletteController.getAllBalance();
+
+    if (this.parseFloat(botBalance) - total - sum < 0) {
+      message.channel.send(text);
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * winnerAmount
+   * @date 2020-09-07
+   * @param {any} command
+   * @param {any} amount
+   * @return {any}
+   */
+  static winnerAmount(command, amount) {
+    return (command !== 'sg') ? amount*2 : amount*14;
+  }
+
+  /**
+  * lastWins
+  * @date 2020-09-07
+  * @param {any} message
+  * @return {any}
+  */
+  static async lastWins(message) {
+    const list = await RouletteHistoricController.getLastWins();
+    const msg = list.map((currentValue, index, array) => {
+      return this.color(this.parseFloat(currentValue.winNumber),
+          (index+1)+'. 🟩\n',
+          (index+1)+'. 🟥\n',
+          (index+1)+'. ⬛\n');
+    });
+    const title = 'Last 10 roll result';
+    const embed = Util.embedConstructor(title, msg);
+    await message.channel.send(embed);
+  }
+
+  /**
+   * 描述
+   * @date 2020-09-07
+   * @param {any} message
+   * @param {any} text
+   * @return {any}
+   */
+  static async bankroll(message) {
+    logger.info('start bankroll');
+
+    const channels = JSON.parse(envConfig.ONLY_CHANNELS_ROULETTE);
+    if (this.channelValidator(message, channels)) return;
+
+    const botBalance = await USERINFO.getBalance( message.client.user.id );
+    if ( !botBalance ) {
+      await USERINFO.generateUserWallet( message.client.user.id );
+      return true;
+    }
+
+    const total = await RouletteController.getAllBalance();
+
+    const title = 'BankRoll:';
+    const embed = this.embedConstructor(title, (this.parseFloat(botBalance) - total)+' HLS');
+    await message.channel.send(embed);
+  }
+
+  /**
+ * create a Discord Rich Embed
+ * @date 2020-08-27
+ * @param {string} title
+ * @param {string} msg
+ * @return {RichEmbed}
+ */
+  static embedConstructor(title, msg) {
+    return new Discord.RichEmbed()
+        .setColor(9955331)
+        .setTitle(title)
+        .setDescription(msg);
+  }
+
+
+  /**
+ * Color logic
+ * @date 2020-08-27
+ * @param {number} number
+ * @param {any} g
+ * @param {any} r
+ * @param {any} b
+ * @return {any}
+ */
+  static color(number, g, r, b) {
+    return (number === 0) ? g : (number % 2 === 0) ? r : b;
   }
 
   /**

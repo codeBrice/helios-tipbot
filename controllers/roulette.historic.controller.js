@@ -32,5 +32,36 @@ class RouletteHistoricController {
     logger.info('start roulette.hictoric updateHistoric');
     return await ROULETTEHDAO.update( id, isFinish);
   }
+
+  /**
+   * get LastWins
+   * @date 2020-09-07
+   * @return {any}
+   */
+  static async getLastWins() {
+    logger.info('start getLastWins');
+    return await ROULETTEHDAO.getLastWins();
+  }
+
+  /**
+   * get Commissions
+   * @date 2020-09-07
+   * @return {any}
+   */
+  static async getCommissions() {
+    logger.info('start getCommissions');
+    return await ROULETTEHDAO.getCommissions();
+  }
+
+  /**
+   * update Commissions
+   * @date 2020-09-07
+   * @param {any} ids
+   * @return {any}
+   */
+  static async updateCommissions(ids) {
+    logger.info('start updateCommissions');
+    return await ROULETTEHDAO.updateCommissions(ids);
+  }
 }
 module.exports = RouletteHistoricController;

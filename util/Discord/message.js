@@ -82,6 +82,9 @@ class Message {
         .addField(envConfig.ALIASCOMMAND+'sr ', 'start bet on the color red')
         .addField(envConfig.ALIASCOMMAND+'sb ', 'start bet on the color black')
         .addField(envConfig.ALIASCOMMAND+'sg ', 'start bet on the color green')
+        .addField(envConfig.ALIASCOMMAND+'sg ', 'start bet on the color green')
+        .addField(envConfig.ALIASCOMMAND+'rlastwin '+envConfig.ALIASCOMMAND+'rlw ', 'Shows the last 10 roulettes')
+        .addField(envConfig.ALIASCOMMAND+'rbankroll '+envConfig.ALIASCOMMAND+'rbr ', 'Shows BankRoll')
         return exampleEmbed;
     }
 }

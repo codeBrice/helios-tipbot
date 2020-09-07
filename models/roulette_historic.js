@@ -14,6 +14,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.BOOLEAN,
       allowNull: false,
     },
+    isCharged: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+    },
   }, {
     tableName: 'tbl_roulette_historics',
     timestamps: false,
