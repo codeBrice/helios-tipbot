@@ -75,5 +75,17 @@ class RouletteController {
     }
     return false;
   }
+
+  /**
+   * get Balance
+   * @date 2020-09-01
+   * @param {any} userDiscordId
+   * @return {any}
+   */
+  static async getAllBalance() {
+    logger.info('start getBalance');
+    const total = await ROULETTEDAO.allBalance();
+    return parseFloat(total);
+  }
 }
 module.exports = RouletteController;

@@ -6,3 +6,5 @@ package-lock.json
 logs/out.log
 
 .vscode/
+
+.eslintrc.json

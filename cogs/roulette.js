@@ -1,4 +1,3 @@
-const Discord = require('discord.js');
 const Util = require('../util/util');
 const msgs = require('../util/msg.json');
 const conf = require('../config.js').jsonConfig();
@@ -15,6 +14,9 @@ const red = '🟥';
 const black = '⬛';
 const green = '🟩';
 const top = '➖➖➖➖🔶➖➖➖➖';
+const initialText = '⬛🟥⬛🟥🟩⬛🟥⬛🟥';
+const dice = '🎲';
+const cash = '💰';
 
 /**
  * Method start roulette
@@ -33,7 +35,7 @@ exports.execute = async (message) => {
     if (Util.channelValidator(message, channels)) return;
 
     // min max validates
-    if (Util.minMaxValidator(amount, message)) return;
+    if (Util.minMaxValidatorRoulette(amount, message)) return;
 
     // Amount Validate
     if (Util.amountValidator(amount, message, msgs.invalid_command+
@@ -53,10 +55,11 @@ exports.execute = async (message) => {
           'users': [new RouletteUser(message.author.id,
               message.author.username, amount, command)],
         };
-        const discordId = JSON.stringify(roulette);
-        global.clientRedis.set('roulette'+message.guild.id, discordId);
-        await message.react('🎲');
+        const bets = JSON.stringify(roulette);
+        global.clientRedis.set('roulette'+message.guild.id, bets);
+        await message.react(dice);
         global.clientRedis.expire('roulette'+message.guild.id, 60);
+        // start roulette time
         rouletteInit(message);
       } else {
         const roulette = JSON.parse(redisUser);
@@ -70,9 +73,9 @@ exports.execute = async (message) => {
             new RouletteUser(message.author.id,
                 message.author.username, amount, command));
 
-        const discordIds = JSON.stringify(roulette);
-        global.clientRedis.set('roulette'+message.guild.id, discordIds);
-        await message.react('🎲');
+        const bets = JSON.stringify(roulette);
+        global.clientRedis.set('roulette'+message.guild.id, bets);
+        await message.react(dice);
       }
     });
   } catch (error) {
@@ -86,6 +89,7 @@ exports.execute = async (message) => {
  * @param {Message} message
  */
 async function rouletteInit(message) {
+  // await waiting more players
   await Util.wait(Util.parseFloat(envConfig.TIME_BET));
   global.clientRedis.get('roulette'+message.guild.id, async (err, redisUser) => {
     if (redisUser != null) {
@@ -95,10 +99,12 @@ async function rouletteInit(message) {
         return;
       }
       roulette.start = true;
-      const discordId = JSON.stringify(roulette);
-      global.clientRedis.set('roulette'+message.guild.id, discordId);
+      const bets = JSON.stringify(roulette);
+      global.clientRedis.set('roulette'+message.guild.id, bets);
+      // start rouletteLogic
       await rouletteLogic(message, roulette.users);
       global.clientRedis.del('roulette'+message.guild.id);
+      // send comission
     } else {
       await message.channel.send('Error');
       global.clientRedis.del('roulette'+message.guild.id);
@@ -110,45 +116,48 @@ async function rouletteInit(message) {
  * rouletteLogic
  * @date 2020-09-04
  * @param {any} message
- * @param {any} usersRoulette
+ * @param {any} bets
  * @return {any}
  */
-async function rouletteLogic(message, usersRoulette) {
+async function rouletteLogic(message, bets) {
   try {
-    const numberRoulette = Math.floor(Math.random() * (14 - 0)) + 0;
+    const numberRoulette = Math.floor(Math.random() * (15 - 0)) + 0;
+
+    if (await Util.bankrollValidator(bets, message,
+        Util.color(numberRoulette, 'sg', 'sr', 'sb'), msgs.roulette_error)) {
+      global.clientRedis.del('roulette'+message.guild.id);
+      return;
+    }
+
     const idRoulette = await RouletteHisController.init(
-        JSON.stringify(usersRoulette), numberRoulette, false );
+        JSON.stringify(bets), numberRoulette, false );
 
     logger.info('--> Rolled ' + numberRoulette + ' in roulette');
-    const initialText = '⬛🟥⬛🟥🟩⬛🟥⬛🟥';
     const title = 'Roulette #'+idRoulette.id;
     let lastText;
     let wonText = '';
     // Start message
-    let embed = embedConstructor(title, top + '\n' + initialText);
-    const msg = await message.channel.send(embed);
+    let embed = Util.embedConstructor(title, top + '\n' + initialText);
+    // const msg = await message.channel.send(embed);
 
     // Travel message
     for (let i = 0; i <= 14; i++) {
-      lastText = await editRoulette(msg, i, title);
-      await Util.wait(800);
+      lastText = editRoulette(i);
       if (numberRoulette == i+1) break;
     }
 
     // Wom message
-
-    if (usersRoulette.some((user) =>
-      user.command === color(numberRoulette, 'sg', 'sr', 'sb'))) {
+    if (bets.some((user) =>
+      user.command === Util.color(numberRoulette, 'sg', 'sr', 'sb'))) {
       logger.info('won roulette');
 
-      for (const user of usersRoulette) {
+      for (const user of bets) {
         user.amount = Util.parseFloat(user.amount);
+        user.amount = user.amount - (2 * user.amount / 100);
 
-        if (user.command === color(numberRoulette, 'sg', 'sr', 'sb')) {
-          const winnerAmount = (user.command !== 'sg') ?
-          String(user.amount*2) : String(user.amount*14);
-
-          wonText += '💰'+user.userName+' won '.concat(winnerAmount +' HLS'+ '\n');
+        if (user.command === Util.color(numberRoulette, 'sg', 'sr', 'sb')) {
+          const winnerAmount = Util.winnerAmount(user.command, user.amount);
+          wonText += cash+user.userName+' won '.concat(String(winnerAmount) +' HLS'+ '\n');
 
           await rouletteWinner(parseFloat(winnerAmount) - user.amount,
               user.discordId, true);
@@ -156,29 +165,30 @@ async function rouletteLogic(message, usersRoulette) {
           await rouletteWinner(user.amount, user.discordId, false);
         }
       }
-      embed = embedConstructor(title, top+'\n'+lastText+'\n\n'+
-                color(numberRoulette, green, red, black)+' '+
-                color(numberRoulette, 'Green', 'Red', 'Black')+
+      embed = Util.embedConstructor(title, top+'\n'+lastText+'\n\n'+
+        Util.color(numberRoulette, green, red, black)+' '+
+        Util.color(numberRoulette, 'Green', 'Red', 'Black')+
                 ' WON!!!' + '\n\n' +
                 wonText);
     } else {
       logger.info('no wom roulette');
       wonText = 'No winners, better luck next time :(';
-      for (const user of usersRoulette) {
+      for (const user of bets) {
         user.amount = Util.parseFloat(user.amount);
         await rouletteWinner(user.amount, user.discordId, false);
       }
 
-      embed = embedConstructor(title, top+'\n'+lastText+'\n\n'+
-                color(numberRoulette, green, red, black)+' '+
-                color(numberRoulette, 'Green', 'Red', 'Black')+
+      embed = Util.embedConstructor(title, top+'\n'+lastText+'\n\n'+
+        Util.color(numberRoulette, green, red, black)+' '+
+        Util.color(numberRoulette, 'Green', 'Red', 'Black')+
                 ' WON!!!' + '\n\n' +
                 wonText);
     }
 
     await RouletteHisController.updateHistoric(idRoulette.id, true);
 
-    await msg.edit(embed);
+    // await msg.edit(embed);
+    await message.channel.send(embed);
     logger.info('finish roulette');
   } catch (error) {
     await message.channel.send('Error');
@@ -190,12 +200,10 @@ async function rouletteLogic(message, usersRoulette) {
 /**
  * Create the roulette from your current position
  * @date 2020-08-27
- * @param {Message} msg
  * @param {number} i
- * @param {string} title
  * @return {string}
  */
-async function editRoulette(msg, i, title) {
+function editRoulette(i) {
   try {
     let text = '';
     let init;
@@ -203,45 +211,16 @@ async function editRoulette(msg, i, title) {
     if (i-3 <= 0) init = 15 - Math.abs(i-3);
     for (let y = 0; y < 9; y++) {
       if (init > 14) init = 0;
-      text += color(init, green, red, black);
+      text += Util.color(init, green, red, black);
       init++;
     }
-    const embed = embedConstructor(title, top + '\n' + text);
+    // const embed = embedConstructor(title, top + '\n' + text);
     logger.info(text);
-    await msg.edit(embed);
+    // await msg.edit(embed);
     return text;
   } catch (error) {
     logger.error(error);
   }
-}
-
-
-/**
- * create a Discord Rich Embed
- * @date 2020-08-27
- * @param {string} title
- * @param {string} msg
- * @return {RichEmbed}
- */
-function embedConstructor(title, msg) {
-  return new Discord.RichEmbed()
-      .setColor(9955331)
-      .setTitle(title)
-      .setDescription(msg);
-}
-
-
-/**
- * Color logic
- * @date 2020-08-27
- * @param {number} number
- * @param {any} g
- * @param {any} r
- * @param {any} b
- * @return {any}
- */
-function color(number, g, r, b) {
-  return (number === 0) ? g : (number % 2 === 0) ? r : b;
 }
 
 /**

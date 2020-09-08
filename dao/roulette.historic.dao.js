@@ -20,6 +20,7 @@ class RouletteHistoricDao {
         bets: json,
         winNumber: number,
         isFinish: isFinish,
+        isCharged: false,
       });
     } catch (error) {
       logger.error( error );
@@ -59,6 +60,62 @@ class RouletteHistoricDao {
       {
         where: {
           id: id,
+        },
+      });
+    } catch (error) {
+      logger.error( error );
+    }
+  }
+
+  /**
+   * getLastWins
+   * @date 2020-09-07
+   * @return {any}
+   */
+  async getLastWins() {
+    try {
+      return roulette_historic.findAll({
+        order: [
+          ['id', 'DESC'],
+        ],
+        limit: 10,
+      });
+    } catch (error) {
+      logger.error( error );
+    }
+  }
+
+  /**
+   * get Commissions
+   * @date 2020-09-07
+   * @return {any}
+   */
+  async getCommissions() {
+    try {
+      return roulette_historic.findAll({
+        where: {
+          isCharged: false,
+        },
+      });
+    } catch (error) {
+      logger.error( error );
+    }
+  }
+
+  /**
+   * get Commissions
+   * @date 2020-09-07
+   * @param {any} ids
+   * @return {any}
+   */
+  async updateCommissions(ids) {
+    try {
+      return roulette_historic.update({
+        isCharged: true,
+      },
+      {
+        where: {
+          id: ids,
         },
       });
     } catch (error) {

@@ -64,6 +64,19 @@ class RouletteDao {
       logger.error( error );
     }
   }
+
+  /**
+   * allBalance
+   * @date 2020-09-07
+   * @return {any}
+   */
+  async allBalance() {
+    try {
+      return roulettes.sum('helios_amount');
+    } catch (error) {
+      logger.error( error );
+    }
+  }
 }
 
 module.exports = RouletteDao;

@@ -11,6 +11,8 @@ const MESSAGEUTIL = new MessageUtil();
 const Coingecko = require('./middleware/coingecko');
 const COINGECKO = new Coingecko();
 const roulette = require('./cogs/roulette');
+const Util = require('./util/util');
+
 
 /**
    * All Command Class
@@ -86,6 +88,14 @@ class Command {
         case 'rhelp':
           await msg.author.send( MESSAGEUTIL.roulette_msg_embed_help() );
           MESSAGEUTIL.reaction_dm( msg );
+          break;
+        case 'rlastwin':
+        case 'rlw':
+          Util.lastWins(msg);
+          break;
+        case 'rbankroll':
+        case 'rbr':
+          Util.bankroll(msg);
           break;
         default:
           break;

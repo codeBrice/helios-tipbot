@@ -6,7 +6,9 @@
     "example_tip": "use the command as follows, for example: `.tip 100 @user`",
     "insufficient_balance": "You don't have enough balance",
     "min_tip": "Tip below the minimum allowed",
+    "min_tip_roulette": "bets below the minimum allowed",
     "max_tip": "The tip is much higher for the maximum allowed",
+    "max_tip_roulette": "The bet is much higher for the maximum allowed",
     "balance_error": "An error has occurred consulting your balance.",
     "balance": "Your balance is: ",
     "wallet_error": "An error has occurred consulting your waallet.",
@@ -24,5 +26,6 @@
     "not_wallet": "You don't have a registered wallet, please write .register to create one.",
     "tip_error": "An error has occurred in the tip.",
     "queue_error": "An error has occurred in the queue.",
-    "bot_amount_gas_error": "You are trying to withdraw a higher sum than Bot balance. Contact Admin."
-}
+    "bot_amount_gas_error": "You are trying to withdraw a higher sum than Bot balance. Contact Admin.",
+    "roulette_error": "An error has occurred in the roulette."
+}    
