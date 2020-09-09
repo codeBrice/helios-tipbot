@@ -14,8 +14,6 @@ const Transaction = require('../controllers/transactions.controller');
 const TRANSACTION = new Transaction();
 const conf = require('../config.js').jsonConfig();
 const logger = require(conf.pathLogger).getHeliosBotLogger();
-const msgs = require('../util/msg.json');
-const RouletteHistoricController = require('../controllers/roulette.historic.controller');
 const Discord = require('discord.js');
 
 /**
@@ -29,7 +27,7 @@ class Util {
    * @param {string} channelType
    * @return {boolean}
    */
-  isDmChannel( channelType ) {
+  static isDmChannel( channelType ) {
     if ( channelType == 'dm' ) {
       return true;
     } else {
@@ -307,27 +305,6 @@ class Util {
   }
 
   /**
-   * min Max Validator
-   * @date 2020-09-01
-   * @param {any} amount
-   * @param {any} msg
-   * @return {any}
-   */
-  static minMaxValidatorRoulette( amount, msg ) {
-    if ( amount < envConfig.MINTIP_BET ) {
-      msg.author.send( msgs.min_tip_roulette + '`(' + `${envConfig.MINTIP_BET }` +' HLS)`');
-      MESSAGEUTIL.reaction_fail( msg );
-      return true;
-    }
-    if ( amount > envConfig.MAXTIP_BET ) {
-      msg.author.send( msgs.max_tip_roulette + '`(' + `${envConfig.MAXTIP_BET }` +' HLS)`');
-      MESSAGEUTIL.reaction_fail( msg );
-      return true;
-    }
-    return false;
-  }
-
-  /**
    * channel Validator
    * @date 2020-09-02
    * @param {any} msg
@@ -344,97 +321,6 @@ class Util {
   }
 
   /**
-   * bankroll Validator
-   * @date 2020-09-06
-   * @param {any} bets
-   * @param {any} message
-   * @param {any} win
-   * @param {any} text
-   * @return {any}
-   */
-  static async bankrollValidator( bets, message, win, text ) {
-    logger.info('start bankroll Validator');
-    const botBalance = await USERINFO.getBalance( message.client.user.id );
-
-    if ( !botBalance ) {
-      await USERINFO.generateUserWallet( message.client.user.id );
-      message.channel.send(text);
-      return true;
-    }
-
-    let sum = 0;
-    for (const bet of bets) {
-      if (bet.command === win) {
-        sum += this.winnerAmount(bet.command, bet.amount) - bet.amount;
-      }
-    }
-
-    const total = await RouletteController.getAllBalance();
-
-    if (this.parseFloat(botBalance) - total - sum < 0) {
-      message.channel.send(text);
-      return true;
-    }
-    return false;
-  }
-
-  /**
-   * winnerAmount
-   * @date 2020-09-07
-   * @param {any} command
-   * @param {any} amount
-   * @return {any}
-   */
-  static winnerAmount(command, amount) {
-    return (command !== 'sg') ? amount*2 : amount*14;
-  }
-
-  /**
-  * lastWins
-  * @date 2020-09-07
-  * @param {any} message
-  * @return {any}
-  */
-  static async lastWins(message) {
-    const list = await RouletteHistoricController.getLastWins();
-    const msg = list.map((currentValue, index, array) => {
-      return this.color(this.parseFloat(currentValue.winNumber),
-          (index+1)+'. 🟩\n',
-          (index+1)+'. 🟥\n',
-          (index+1)+'. ⬛\n');
-    });
-    const title = 'Last 10 roll result';
-    const embed = Util.embedConstructor(title, msg);
-    await message.channel.send(embed);
-  }
-
-  /**
-   * 描述
-   * @date 2020-09-07
-   * @param {any} message
-   * @param {any} text
-   * @return {any}
-   */
-  static async bankroll(message) {
-    logger.info('start bankroll');
-
-    const channels = JSON.parse(envConfig.ONLY_CHANNELS_ROULETTE);
-    if (this.channelValidator(message, channels)) return;
-
-    const botBalance = await USERINFO.getBalance( message.client.user.id );
-    if ( !botBalance ) {
-      await USERINFO.generateUserWallet( message.client.user.id );
-      return true;
-    }
-
-    const total = await RouletteController.getAllBalance();
-
-    const title = 'BankRoll:';
-    const embed = this.embedConstructor(title, (this.parseFloat(botBalance) - total)+' HLS');
-    await message.channel.send(embed);
-  }
-
-  /**
  * create a Discord Rich Embed
  * @date 2020-08-27
  * @param {string} title
@@ -446,20 +332,6 @@ class Util {
         .setColor(9955331)
         .setTitle(title)
         .setDescription(msg);
-  }
-
-
-  /**
- * Color logic
- * @date 2020-08-27
- * @param {number} number
- * @param {any} g
- * @param {any} r
- * @param {any} b
- * @return {any}
- */
-  static color(number, g, r, b) {
-    return (number === 0) ? g : (number % 2 === 0) ? r : b;
   }
 
   /**

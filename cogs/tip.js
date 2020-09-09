@@ -28,7 +28,7 @@ class Tip {
                     }
             }
 
-            const isDm = UTIL.isDmChannel( msg.channel.type );
+            const isDm = Util.isDmChannel( msg.channel.type );
             if ( isDm ) {
                 msg.author.send( msgs.server_message );
             } else {

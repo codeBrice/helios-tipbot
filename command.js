@@ -11,8 +11,6 @@ const MESSAGEUTIL = new MessageUtil();
 const Coingecko = require('./middleware/coingecko');
 const COINGECKO = new Coingecko();
 const roulette = require('./cogs/roulette');
-const Util = require('./util/util');
-
 
 /**
    * All Command Class
@@ -75,10 +73,10 @@ class Command {
         case 'rb':
         case 'rbal':
         case 'r$':
-          await ACCOUNT.getRouletteBalance( msg );
+          await roulette.getRouletteBalance( msg );
           break;
         case 'rwithdraw':
-          await ACCOUNT.withdrawRoulette( msg );
+          await roulette.withdrawRoulette( msg );
           break;
         case 'sg':
         case 'sr':
@@ -91,11 +89,11 @@ class Command {
           break;
         case 'rlastwin':
         case 'rlw':
-          Util.lastWins(msg);
+          roulette.lastWins(msg);
           break;
         case 'rbankroll':
         case 'rbr':
-          Util.bankroll(msg);
+          roulette.bankroll(msg);
           break;
         default:
           break;
