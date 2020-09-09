@@ -40,6 +40,16 @@ class Message {
         await msg.react('✅');
     }
 
+    async maintenanceInit( msg ) {
+        await msg.react('🤖');
+        await msg.react('🚧');
+    }
+
+    async maintenanceFinish( msg ) {
+        await msg.react('🤖');
+        await msg.react('✅');
+    }
+
     msg_embed( title, description, isTip = false , url = ''){
         // inside a command, event listener, etc.
         let exampleEmbed = new Discord.RichEmbed()

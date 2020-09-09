@@ -11,6 +11,7 @@ const MESSAGEUTIL = new MessageUtil();
 const Coingecko = require('./middleware/coingecko');
 const COINGECKO = new Coingecko();
 const roulette = require('./cogs/roulette');
+const Util = require('./util/util');
 
 /**
    * All Command Class
@@ -25,6 +26,19 @@ class Command {
    */
   async onMessage( msg ) {
     if ( msg.content.substring(0, 1) == envConfig.ALIASCOMMAND ) {
+      if (Util.rolesValidator(msg, envConfig.ADMIN_ROLES)) return;
+
+      const maintenance = await new Promise( ( resolve, reject ) => {
+        return global.clientRedis.get('maintenance', async function(err, receive) {
+          resolve(receive);
+        });
+      });
+
+      if (maintenance && global.ctx.args[0] != 'unfreeze') {
+        MESSAGEUTIL.reaction_fail( msg );
+        return;
+      }
+
       switch ( global.ctx.args[0] ) {
         case 'register':
           await ACCOUNT.generateAccount( msg );
@@ -94,6 +108,13 @@ class Command {
         case 'rbankroll':
         case 'rbr':
           roulette.bankroll(msg);
+          break;
+        case 'freeze':
+          if (maintenance) return;
+          Util.maintenance(msg);
+        case 'unfreeze':
+          if (maintenance == null) return;
+          Util.maintenance(msg);
           break;
         default:
           break;

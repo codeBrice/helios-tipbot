@@ -345,6 +345,40 @@ class Util {
       setTimeout(resolve, ms);
     });
   }
+
+  /**
+   * maintenance
+   * @date 2020-09-09
+   * @param {any} message
+   * @return {any}
+   */
+  static async maintenance(message) {
+    global.clientRedis.get('maintenance', async (err, redisData) => {
+      if (redisData == null) {
+        global.clientRedis.set('maintenance', true);
+        MESSAGEUTIL.maintenanceInit( message );
+      } else {
+        global.clientRedis.del('maintenance');
+        MESSAGEUTIL.maintenanceFinish( message );
+      }
+    });
+  }
+
+  /**
+   * rolesValidator
+   * @date 2020-09-09
+   * @param {any} msg
+   * @param {any} rolesString
+   * @return {any}
+   */
+  static rolesValidator( msg, rolesString ) {
+    const msgRoleIds= msg.member.roles.array().map((x) => x.id);
+    const rolesIds= JSON.parse(rolesString);
+    if (!msgRoleIds.some((x)=> rolesIds.includes(x))) {
+      return true;
+    }
+    return false;
+  }
 }
 
 module.exports = Util;
