@@ -121,7 +121,7 @@ class Command {
           await TIP.tip( msg, false, false, true );
           break;
         case 'wfu':
-          if (Util.rolesValidator(msg, envConfig.MOD_ROLES) && Util.channelValidator(msg, envConfig.ONLY_CHANNELS_WFU)) return;
+          if (Util.rolesValidator(msg, envConfig.MOD_ROLES) || Util.channelValidator(msg, envConfig.ONLY_CHANNELS_WFU)) return;
           await ACCOUNT.getWallet( msg, true, global.ctx.args[1] );
           break;
         default:

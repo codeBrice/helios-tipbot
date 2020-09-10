@@ -50,7 +50,7 @@ class Message {
         await msg.react('✅');
     }
 
-    msg_embed( title, description, isTip = false , url = ''){
+    msg_embed( title, description, isTip = false , url = '', isWfu = false ){
         // inside a command, event listener, etc.
         let exampleEmbed = new Discord.RichEmbed()
         .setColor('#e6d46a')
@@ -59,6 +59,10 @@ class Message {
         
         if ( isTip ) {
             exampleEmbed.addField('Check transaction in explorer', url);
+        }
+
+        if ( isWfu ) {
+            exampleEmbed.addField('Check wallet in explorer', url);
         }
         return exampleEmbed;
     }

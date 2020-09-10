@@ -1,6 +1,7 @@
 require('dotenv').config();
 const envConfig = process.env;
 const Util = require('../util/util');
+const UTIL = new Util();
 const conf = require("../config.js").jsonConfig();
 const logger = require(conf.pathLogger).getHeliosBotLogger();
 const msgs = require('../util/msg.json');
@@ -74,10 +75,10 @@ class Tip {
                                     amount = amount / user_tip_id_list.length;
 
                                 //transaction object
-                                txs = await Util.arrayTransaction( msg , user_tip_id_list, userInfoSend , amount, true, false );
+                                txs = await UTIL.arrayTransaction( msg , user_tip_id_list, userInfoSend , amount, true, false );
                             } else {
                                 //tip author
-                                txs = await Util.arrayTransaction( msg , null, userInfoSend , amount, true, false, true );
+                                txs = await UTIL.arrayTransaction( msg , null, userInfoSend , amount, true, false, true );
                             }
                             
                             if ( txs.length > 0 ) {
@@ -85,7 +86,7 @@ class Tip {
                                 if ( transaction.length > 0 ) {
                                     await MESSAGEUTIL.reaction_complete_tip( msg );
                                     if ( !isTipAuthor )
-                                        await Util.receiveTx( transaction, msg, amount, false, null, false);
+                                        await UTIL.receiveTx( transaction, msg, amount, false, null, false);
                                 } else {
                                     await MESSAGEUTIL.reaction_transaction_queue( msg );
                                     return;

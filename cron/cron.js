@@ -56,7 +56,7 @@ exports.fnRunCrons = function() {
   });
   cronReceive.start();
 
-  const cronTransactionQueue = cron.job('0/2 * * * * *', async function() {
+  const cronTransactionQueue = cron.job('0/4 * * * * *', async function() {
     try {
       logger.info('Start transaction queue');
       const getQueue = await TRANSACTIONQUEUECONTROLLER.findAll();

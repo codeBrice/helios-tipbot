@@ -111,12 +111,16 @@ class Account {
       const userInfoWallet = await userInfoController.getWallet( ( isWfu ? user_discord_id : msg.author.id ) );
       if ( userInfoWallet ) {
         if ( isWfu ) {
-          await msg.channel.send( userInfoWallet );
+          const fetchUser = await global.client.fetchUser( user_discord_id, false );
+          console.log(fetchUser);
+          msg.channel.send( MESSAGEUTIL.msg_embed('Wallet for user info',
+           'User: '+fetchUser+
+           ' \n Wallet: `'+userInfoWallet+'`', false,
+          'https://heliosprotocol.io/block-explorer/#main_page-address&'+userInfoWallet, true));
         } else {
           msg.author.send( MESSAGEUTIL.msg_embed('Wallet info', msgs.wallet +'`'+userInfoWallet+'`'));
         }
       } else {
-        msg.author.send( msgs.wallet_error);
         MESSAGEUTIL.reaction_fail( msg );
       }
     } catch (error) {
