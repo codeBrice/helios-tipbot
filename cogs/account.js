@@ -15,6 +15,7 @@ const Helios = require('../middleware/helios');
 const HELIOS = new Helios();
 const TransactionQueueController = require('../controllers/transaction.queue.controller');
 const TRANSACTIONQUEUECONTROLLER = new TransactionQueueController();
+const RouletteController = require('../controllers/roulette.controller');
 
 /**
    * Account class
@@ -29,7 +30,7 @@ class Account {
   async generateAccount( msg ) {
     try {
       // console.log( 'msg guild id: ' + msg.guild + ' msg author id: ' + msg.author.id );
-      const isDm = Util.isDmChannel( msg.channel.type );
+      const isDm = UTIL.isDmChannel( msg.channel.type );
       if ( isDm ) {
         const userInfo = await userInfoController.generateUserWallet( msg.author.id );
         if ( userInfo ) {
@@ -105,14 +106,14 @@ class Account {
    * @param {any} msg
    * @return {any}
    */
-  async getWallet( msg ) {
+  async getWallet( msg, isWfu = false, user_discord_id = null ) {
     try {
-      const userInfoWallet = await userInfoController.getWallet( msg.author.id );
+      const userInfoWallet = await userInfoController.getWallet( ( isWfu ? user_discord_id : msg.author.id ) );
       if ( userInfoWallet ) {
-        msg.author.send( MESSAGEUTIL.msg_embed('Wallet info', msgs.wallet +'`'+userInfoWallet+'`'));
-        const isDm = Util.isDmChannel( msg.channel.type );
-        if ( !isDm ) {
-          MESSAGEUTIL.reaction_dm( msg );
+        if ( isWfu ) {
+          await msg.channel.send( userInfoWallet );
+        } else {
+          msg.author.send( MESSAGEUTIL.msg_embed('Wallet info', msgs.wallet +'`'+userInfoWallet+'`'));
         }
       } else {
         msg.author.send( msgs.wallet_error);
@@ -199,6 +200,111 @@ class Account {
     } catch (error) {
       msg.author.send( msgs.error_withdraw + envConfig.ALIASCOMMAND + 'withdraw 100 0x00000');
       MESSAGEUTIL.reaction_fail( msg );
+      logger.error( error );
+    }
+  }
+
+  /**
+   * getRouletteBalance
+   * @date 2020-09-01
+   * @param {any} msg
+   * @return {any}
+   */
+  async getRouletteBalance( msg ) {
+    try {
+      logger.info('start getRouletteBalance');
+      const user = await userInfoController.getUser( msg.author.id );
+      if ( !user ) {
+        await userInfoController.generateUserWallet( msg.author.id );
+        msg.author.send( MESSAGEUTIL.msg_embed('Roulette Balance',
+            msgs.balance + 0 + ' HLS') );
+        return;
+      }
+      const userBalance = await RouletteController.getBalance(user.id);
+      if ( userBalance != null ) {
+        msg.author.send( MESSAGEUTIL.msg_embed('Roulette Balance',
+            msgs.balance + userBalance + ' HLS') );
+        const isDm = Util.isDmChannel( msg.channel.type );
+        if ( !isDm ) {
+          MESSAGEUTIL.reaction_dm( msg );
+        }
+      } else {
+        msg.author.send( msgs.balance_error );
+      }
+    } catch (error) {
+      logger.error( error );
+    }
+  }
+
+  /**
+   * withdrawRoulette
+   * @date 2020-09-01
+   * @param {any} msg
+   * @return {any}
+   */
+  async withdrawRoulette( msg ) {
+    try {
+      logger.info('start withdrawRoulette');
+      if ( UTIL.isDmChannel(msg.channel.type) ) {
+        const amount = Util.parseFloat( global.ctx.args[1] );
+        // Amount Validate
+        if (Util.amountValidator(amount, msg, msgs.invalid_command+
+          ` example: ${global.client.config.PREFIX}rwithdraw 10`)) return;
+
+        const amountGas = await userInfoController.getGasPriceSumAmount( amount );
+
+        if (await Util.rouletteBalanceValidator(amountGas, msg,
+            msgs.amount_gas_error +
+            ', remember to have enough gas for the transaction.')) return;
+
+        if (await Util.botBalanceValidator(amountGas, msg,
+            msgs.bot_amount_gas_error)) return;
+
+        const userTipIdList = [];
+        const botData = await userInfoController.getUser( msg.client.user.id );
+        userTipIdList.push( {user_discord_id: msg.author.id,
+          tag: msg.author.username} );
+        // transaction object
+        const toUser = await userInfoController.getUser( msg.author.id );
+        const tx = [];
+        const transactionEntitie = new SendTransaction();
+        transactionEntitie.from = botData.wallet;
+        transactionEntitie.to = toUser.wallet;
+        transactionEntitie.gasPrice = await HELIOS.toWei(String(await HELIOS.getGasPrice()));
+        transactionEntitie.gas = envConfig.GAS;
+        transactionEntitie.value = await HELIOS.toWeiEther((String(amount)));
+        transactionEntitie.keystore_wallet = botData.keystore_wallet;
+        tx.push( transactionEntitie );
+        const getReceive = await new Promise( ( resolve, reject ) => {
+          return global.clientRedis.get('receive:'+msg.author.id, async function(err, receive) {
+            resolve(receive);
+          });
+        });
+        const getTip = await new Promise( ( resolve, reject ) => {
+          return global.clientRedis.get('tip:'+msg.author.id, async function(err, tip) {
+            resolve(tip);
+          });
+        });
+        if ( getReceive || getTip) {
+          await TRANSACTIONQUEUECONTROLLER.create( tx, msg, false, false);
+          MESSAGEUTIL.reaction_transaction_queue( msg );
+          return;
+        }
+        const sendTx = await TRANSACTIONCONTROLLER.sendTransaction( tx, botData.keystore_wallet);
+        if ( !sendTx.length ) {
+          global.clientRedis.set( 'tip:'+msg.author.id, msg.author.id );
+          global.clientRedis.expire('tip:'+msg.author.id, 11);
+          msg.author.send( msgs.error_withdraw + envConfig.ALIASCOMMAND + 'withdraw 100 0x00000' );
+          logger.error( error );
+        } else {
+          await RouletteController.updateBalance(msg.author.id, amountGas, false);
+          msg.author.send(MESSAGEUTIL.msg_embed('Withdraw process', msgs.withdraw_success));
+        }
+      } else {
+        msg.delete( msg );
+        msg.author.send( msgs.direct_message + ' (`rwithdraw`)' );
+      }
+    } catch (error) {
       logger.error( error );
     }
   }

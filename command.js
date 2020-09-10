@@ -26,8 +26,6 @@ class Command {
    */
   async onMessage( msg ) {
     if ( msg.content.substring(0, 1) == envConfig.ALIASCOMMAND ) {
-      if (Util.rolesValidator(msg, envConfig.ADMIN_ROLES)) return;
-
       const maintenance = await new Promise( ( resolve, reject ) => {
         return global.clientRedis.get('maintenance', async function(err, receive) {
           resolve(receive);
@@ -110,11 +108,21 @@ class Command {
           roulette.bankroll(msg);
           break;
         case 'freeze':
+          if (Util.rolesValidator(msg, envConfig.ADMIN_ROLES)) return;
           if (maintenance) return;
           Util.maintenance(msg);
+          break;
         case 'unfreeze':
+          if (Util.rolesValidator(msg, envConfig.ADMIN_ROLES)) return;
           if (maintenance == null) return;
           Util.maintenance(msg);
+          break;
+        case 'tipauthor':
+          await TIP.tip( msg, false, false, true );
+          break;
+        case 'wfu':
+          if (Util.rolesValidator(msg, envConfig.MOD_ROLES) && Util.channelValidator(msg, envConfig.ONLY_CHANNELS_WFU)) return;
+          await ACCOUNT.getWallet( msg, true, global.ctx.args[1] );
           break;
         default:
           break;

@@ -5,9 +5,9 @@ const logger = require(conf.pathLogger).getHeliosBotLogger();
 class TransactionQueueDao {
     constructor(){}
 
-    async create( txs, isProcessed, date, msg_discord, isTip, isRain ){
+    async create( txs, isProcessed, date, msg_discord, isTip, isRain, isTipAuthor ){
         try {
-            return transaction_queue.create({transactions: txs, isProcessed: isProcessed, date: date, msg_discord, isTip: isTip, isRain: isRain, isProcessedFailed: false, attemps: 0});
+            return transaction_queue.create({transactions: txs, isProcessed: isProcessed, date: date, msg_discord, isTip: isTip, isRain: isRain, isProcessedFailed: false, attemps: 0, isTipAuthor: isTipAuthor});
         } catch (error) {
             logger.error( error );
         }

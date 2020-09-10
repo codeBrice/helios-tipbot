@@ -32,7 +32,11 @@ module.exports = (sequelize, DataTypes) => {
     attemps: {
       type: DataTypes.INTEGER,
       allowNull: false
-    }
+    },
+    isTipAuthor: {
+      type: DataTypes.BOOLEAN,
+      allowNull:false
+    },
   }, {
     tableName: "tbl_transaction_queue",
     timestamps: false

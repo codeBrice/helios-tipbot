@@ -1,7 +1,6 @@
 require('dotenv').config();
 const envConfig = process.env;
 const Util = require('../util/util');
-const UTIL = new Util();
 const moment = require("moment");
 const UserInfoController = require('../controllers/userinfo.controller');
 const USERINFOCONTROLLER = new UserInfoController();
@@ -68,13 +67,13 @@ class Rain {
             
             amount = amount/getActiveUsers.length;
 
-            txs = await UTIL.arrayTransaction( msg , getActiveUsers, userInfoSend , amount, false, true );
+            txs = await Util.arrayTransaction( msg , getActiveUsers, userInfoSend , amount, false, true );
 
             if ( txs.length > 0 ) {
                 const transaction = await TRANSACTION.sendTransaction( txs , userInfoSend.keystore_wallet);
                 if ( transaction.length > 0  ) {
                     await MESSAGEUTIL.reaction_complete_rain( msg );
-                    await UTIL.receiveTx( transaction, msg, amount, false, null, true );
+                    await Util.receiveTx( transaction, msg, amount, false, null, true );
                 } else {
                     MESSAGEUTIL.reaction_transaction_queue( msg );
                     return;

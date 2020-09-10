@@ -6,8 +6,8 @@ class TransactionQueueController {
 
     constructor(){}
 
-    async create( txs , msg_discord , isTip = false , isRain = false) {
-        const queue = await TRANSACTIONQUEUEDAO.create( JSON.stringify(txs), false, moment().utc().toDate(), JSON.stringify({ message_id: msg_discord.id, channel_id: msg_discord.channel.id}), isTip, isRain );
+    async create( txs , msg_discord , isTip = false , isRain = false, isTipAuthor = false ) {
+        const queue = await TRANSACTIONQUEUEDAO.create( JSON.stringify(txs), false, moment().utc().toDate(), JSON.stringify({ message_id: msg_discord.id, channel_id: msg_discord.channel.id}), isTip, isRain, isTipAuthor );
         return queue;
     }
 
