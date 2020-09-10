@@ -3,7 +3,6 @@ const envConfig = process.env;
 const UserInfoController = require('../controllers/userinfo.controller');
 const userInfoController = new UserInfoController();
 const Util = require('../util/util');
-const UTIL = new Util();
 const conf = require('../config.js').jsonConfig();
 const logger = require(conf.pathLogger).getHeliosBotLogger();
 const msgs = require('../util/msg.json');
@@ -57,7 +56,7 @@ class Account {
   async getPrivateKey( msg ) {
     try {
       // console.log( 'msg guild id: ' + msg.guild + ' msg author id: ' + msg.author.id );
-      const isDm = UTIL.isDmChannel( msg.channel.type );
+      const isDm = Util.isDmChannel( msg.channel.type );
       if ( isDm ) {
         const userInfoPrivateKey = await userInfoController.getPrivateKey( msg.author.id );
         if ( userInfoPrivateKey ) {
@@ -90,7 +89,7 @@ class Account {
       const userInfoBalance = await userInfoController.getBalance( msg.author.id );
       if ( userInfoBalance ) {
         msg.author.send( MESSAGEUTIL.msg_embed('Balance', msgs.balance + userInfoBalance + ' HLS') );
-        const isDm = UTIL.isDmChannel( msg.channel.type );
+        const isDm = Util.isDmChannel( msg.channel.type );
         if ( !isDm ) {
           MESSAGEUTIL.reaction_dm( msg );
         }
@@ -107,17 +106,21 @@ class Account {
    * @param {any} msg
    * @return {any}
    */
-  async getWallet( msg ) {
+  async getWallet( msg, isWfu = false, user_discord_id = null ) {
     try {
-      const userInfoWallet = await userInfoController.getWallet( msg.author.id );
+      const userInfoWallet = await userInfoController.getWallet( ( isWfu ? user_discord_id : msg.author.id ) );
       if ( userInfoWallet ) {
-        msg.author.send( MESSAGEUTIL.msg_embed('Wallet info', msgs.wallet +'`'+userInfoWallet+'`'));
-        const isDm = UTIL.isDmChannel( msg.channel.type );
-        if ( !isDm ) {
-          MESSAGEUTIL.reaction_dm( msg );
+        if ( isWfu ) {
+          const fetchUser = await global.client.fetchUser( user_discord_id, false );
+          console.log(fetchUser);
+          msg.channel.send( MESSAGEUTIL.msg_embed('Wallet for user info',
+           'User: '+fetchUser+
+           ' \n Wallet: `'+userInfoWallet+'`', false,
+          'https://heliosprotocol.io/block-explorer/#main_page-address&'+userInfoWallet, true));
+        } else {
+          msg.author.send( MESSAGEUTIL.msg_embed('Wallet info', msgs.wallet +'`'+userInfoWallet+'`'));
         }
       } else {
-        msg.author.send( msgs.wallet_error);
         MESSAGEUTIL.reaction_fail( msg );
       }
     } catch (error) {
@@ -135,7 +138,7 @@ class Account {
    */
   async withdraw( msg ) {
     try {
-      if ( UTIL.isDmChannel(msg.channel.type) ) {
+      if ( Util.isDmChannel(msg.channel.type) ) {
         const amount = Util.parseFloat( global.ctx.args[1] );
 
         if ( typeof amount != 'number' || isNaN(amount) ) {
@@ -225,7 +228,7 @@ class Account {
       if ( userBalance != null ) {
         msg.author.send( MESSAGEUTIL.msg_embed('Roulette Balance',
             msgs.balance + userBalance + ' HLS') );
-        const isDm = UTIL.isDmChannel( msg.channel.type );
+        const isDm = Util.isDmChannel( msg.channel.type );
         if ( !isDm ) {
           MESSAGEUTIL.reaction_dm( msg );
         }

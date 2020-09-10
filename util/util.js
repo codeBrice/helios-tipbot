@@ -14,8 +14,6 @@ const Transaction = require('../controllers/transactions.controller');
 const TRANSACTION = new Transaction();
 const conf = require('../config.js').jsonConfig();
 const logger = require(conf.pathLogger).getHeliosBotLogger();
-const msgs = require('../util/msg.json');
-const RouletteHistoricController = require('../controllers/roulette.historic.controller');
 const Discord = require('discord.js');
 
 /**
@@ -29,7 +27,7 @@ class Util {
    * @param {string} channelType
    * @return {boolean}
    */
-  isDmChannel( channelType ) {
+  static isDmChannel( channelType ) {
     if ( channelType == 'dm' ) {
       return true;
     } else {
@@ -58,34 +56,55 @@ class Util {
    * @param {boolean} isRain
    * @return {SendTransaction[]}
    */
-  async arrayTransaction( msg, user_tip_id_list, userInfoSend, amount, isTip, isRain ) {
+  async arrayTransaction( msg, user_tip_id_list, userInfoSend, amount, isTip, isRain, isTipAuthor = false ) {
     let txs = [];
-    for ( let i = 0; i < user_tip_id_list.length; i++ ) {
-      const transactionEntitie = new SendTransaction();
-      let getUserReceive = await USERINFO.getUser( user_tip_id_list[i].user_discord_id );
-      if ( !getUserReceive ) {
-        await USERINFO.generateUserWallet( user_tip_id_list[i].user_discord_id );
-        getUserReceive = await USERINFO.getUser( user_tip_id_list[i].user_discord_id );
+    if ( !isTipAuthor ) {
+      for ( let i = 0; i < user_tip_id_list.length; i++ ) {
+        const transactionEntitie = new SendTransaction();
+        let getUserReceive = await USERINFO.getUser( user_tip_id_list[i].user_discord_id );
+        if ( !getUserReceive ) {
+          await USERINFO.generateUserWallet( user_tip_id_list[i].user_discord_id );
+          getUserReceive = await USERINFO.getUser( user_tip_id_list[i].user_discord_id );
+        }
+  
+        transactionEntitie.from = userInfoSend.wallet;
+        transactionEntitie.to = getUserReceive.wallet;
+        transactionEntitie.keystore_wallet = userInfoSend.keystore_wallet;
+        transactionEntitie.user_discord_id_send = userInfoSend.user_discord_id;
+        transactionEntitie.user_id_send = userInfoSend.id;
+        transactionEntitie.gasPrice = await HELIOS.toWei(String(await HELIOS.getGasPrice()));
+        transactionEntitie.gas = envConfig.GAS;
+        transactionEntitie.value = await HELIOS.toWeiEther((String(amount)));
+        transactionEntitie.user_discord_id_receive = getUserReceive.user_discord_id;
+        transactionEntitie.user_id_receive = getUserReceive.id;
+        transactionEntitie.helios_amount = amount;
+        txs.push( transactionEntitie );
       }
-
+    } else {
+      const transactionEntitie = new SendTransaction();
       transactionEntitie.from = userInfoSend.wallet;
-      transactionEntitie.to = getUserReceive.wallet;
+      transactionEntitie.to = envConfig.DEV_WALLET;
       transactionEntitie.keystore_wallet = userInfoSend.keystore_wallet;
       transactionEntitie.user_discord_id_send = userInfoSend.user_discord_id;
       transactionEntitie.user_id_send = userInfoSend.id;
       transactionEntitie.gasPrice = await HELIOS.toWei(String(await HELIOS.getGasPrice()));
       transactionEntitie.gas = envConfig.GAS;
       transactionEntitie.value = await HELIOS.toWeiEther((String(amount)));
-      transactionEntitie.user_discord_id_receive = getUserReceive.user_discord_id;
-      transactionEntitie.user_id_receive = getUserReceive.id;
+      transactionEntitie.user_discord_id_receive = null;
+      transactionEntitie.user_id_receive = null;
       transactionEntitie.helios_amount = amount;
+      transactionEntitie.isTipAuthor = true;
       txs.push( transactionEntitie );
     }
     let isQueue;
-    isQueue = await this.isQueue( txs, msg );
+    isQueue = await this.isQueue( txs, msg, isTipAuthor );
     if ( isQueue ) {
       if ( isTip ) {
-        await TRANSACTIONQUEUECONTROLLER.create( txs, msg, true, false);
+        if ( isTipAuthor ) {
+          await TRANSACTIONQUEUECONTROLLER.create( txs, msg, true, false, true);
+        } else {
+          await TRANSACTIONQUEUECONTROLLER.create( txs, msg, true, false);
+        }
       }
       if ( isRain ) {
         await TRANSACTIONQUEUECONTROLLER.create( txs, msg, false, true);
@@ -104,12 +123,13 @@ class Util {
    * @param {Message} msg
    * @return {boolean}
    */
-  async isQueue( txs, msg ) {
+  async isQueue( txs, msg, isTipAuthor ) {
     let isQueue = false;
     let getReceive;
     let getTip;
     let getReceiveSend;
     let getTipSend;
+    let getTipAuthor;
     getTipSend = await new Promise( ( resolve, reject ) => {
       return global.clientRedis.get('tip:'+msg.author.id, function(err, tip) {
         resolve(tip);
@@ -118,6 +138,17 @@ class Util {
     if ( !getTipSend ) {
       global.clientRedis.set( 'tip:'+msg.author.id, msg.author.id );
       global.clientRedis.expire('tip:'+msg.author.id, 11);
+    }
+
+    getTipAuthor = await new Promise( ( resolve, reject ) => {
+      return global.clientRedis.get('tip:'+envConfig.DEV_WALLET, function(err, tip) {
+        resolve(tip);
+      });
+    });
+
+    if ( !getTipAuthor ) {
+      global.clientRedis.set( 'tip:'+envConfig.DEV_WALLET, envConfig.DEV_WALLET );
+      global.clientRedis.expire('tip:'+envConfig.DEV_WALLET, 11);
     }
 
     getReceiveSend = await new Promise( ( resolve, reject ) => {
@@ -307,27 +338,6 @@ class Util {
   }
 
   /**
-   * min Max Validator
-   * @date 2020-09-01
-   * @param {any} amount
-   * @param {any} msg
-   * @return {any}
-   */
-  static minMaxValidatorRoulette( amount, msg ) {
-    if ( amount < envConfig.MINTIP_BET ) {
-      msg.author.send( msgs.min_tip_roulette + '`(' + `${envConfig.MINTIP_BET }` +' HLS)`');
-      MESSAGEUTIL.reaction_fail( msg );
-      return true;
-    }
-    if ( amount > envConfig.MAXTIP_BET ) {
-      msg.author.send( msgs.max_tip_roulette + '`(' + `${envConfig.MAXTIP_BET }` +' HLS)`');
-      MESSAGEUTIL.reaction_fail( msg );
-      return true;
-    }
-    return false;
-  }
-
-  /**
    * channel Validator
    * @date 2020-09-02
    * @param {any} msg
@@ -344,97 +354,6 @@ class Util {
   }
 
   /**
-   * bankroll Validator
-   * @date 2020-09-06
-   * @param {any} bets
-   * @param {any} message
-   * @param {any} win
-   * @param {any} text
-   * @return {any}
-   */
-  static async bankrollValidator( bets, message, win, text ) {
-    logger.info('start bankroll Validator');
-    const botBalance = await USERINFO.getBalance( message.client.user.id );
-
-    if ( !botBalance ) {
-      await USERINFO.generateUserWallet( message.client.user.id );
-      message.channel.send(text);
-      return true;
-    }
-
-    let sum = 0;
-    for (const bet of bets) {
-      if (bet.command === win) {
-        sum += this.winnerAmount(bet.command, bet.amount) - bet.amount;
-      }
-    }
-
-    const total = await RouletteController.getAllBalance();
-
-    if (this.parseFloat(botBalance) - total - sum < 0) {
-      message.channel.send(text);
-      return true;
-    }
-    return false;
-  }
-
-  /**
-   * winnerAmount
-   * @date 2020-09-07
-   * @param {any} command
-   * @param {any} amount
-   * @return {any}
-   */
-  static winnerAmount(command, amount) {
-    return (command !== 'sg') ? amount*2 : amount*14;
-  }
-
-  /**
-  * lastWins
-  * @date 2020-09-07
-  * @param {any} message
-  * @return {any}
-  */
-  static async lastWins(message) {
-    const list = await RouletteHistoricController.getLastWins();
-    const msg = list.map((currentValue, index, array) => {
-      return this.color(this.parseFloat(currentValue.winNumber),
-          (index+1)+'. 🟩\n',
-          (index+1)+'. 🟥\n',
-          (index+1)+'. ⬛\n');
-    });
-    const title = 'Last 10 roll result';
-    const embed = Util.embedConstructor(title, msg);
-    await message.channel.send(embed);
-  }
-
-  /**
-   * 描述
-   * @date 2020-09-07
-   * @param {any} message
-   * @param {any} text
-   * @return {any}
-   */
-  static async bankroll(message) {
-    logger.info('start bankroll');
-
-    const channels = JSON.parse(envConfig.ONLY_CHANNELS_ROULETTE);
-    if (this.channelValidator(message, channels)) return;
-
-    const botBalance = await USERINFO.getBalance( message.client.user.id );
-    if ( !botBalance ) {
-      await USERINFO.generateUserWallet( message.client.user.id );
-      return true;
-    }
-
-    const total = await RouletteController.getAllBalance();
-
-    const title = 'BankRoll:';
-    const embed = this.embedConstructor(title, (this.parseFloat(botBalance) - total)+' HLS');
-    await message.channel.send(embed);
-  }
-
-  /**
  * create a Discord Rich Embed
  * @date 2020-08-27
  * @param {string} title
@@ -448,20 +367,6 @@ class Util {
         .setDescription(msg);
   }
 
-
-  /**
- * Color logic
- * @date 2020-08-27
- * @param {number} number
- * @param {any} g
- * @param {any} r
- * @param {any} b
- * @return {any}
- */
-  static color(number, g, r, b) {
-    return (number === 0) ? g : (number % 2 === 0) ? r : b;
-  }
-
   /**
   * wait
   * @date 2020-09-03
@@ -472,6 +377,61 @@ class Util {
     return new Promise((resolve) => {
       setTimeout(resolve, ms);
     });
+  }
+
+    /**
+   * min Max Validator
+   * @date 2020-09-01
+   * @param {any} amount
+   * @param {any} msg
+   * @return {any}
+   */
+  static minMaxValidator( amount, msg ) {
+    if ( amount < envConfig.MINTIP ) {
+      msg.author.send( msgs.min_tip + '`(' + `${envConfig.MINTIP }` +' HLS)`');
+      MESSAGEUTIL.reaction_fail( msg );
+      return true;
+    }
+    if ( amount > envConfig.MAXTIP ) {
+      msg.author.send( msgs.max_tip + '`(' + `${envConfig.MAXTIP }` +' HLS)`');
+      MESSAGEUTIL.reaction_fail( msg );
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * maintenance
+   * @date 2020-09-09
+   * @param {any} message
+   * @return {any}
+   */
+  static async maintenance(message) {
+    global.clientRedis.get('maintenance', async (err, redisData) => {
+      if (redisData == null) {
+        global.clientRedis.set('maintenance', true);
+        MESSAGEUTIL.maintenanceInit( message );
+      } else {
+        global.clientRedis.del('maintenance');
+        MESSAGEUTIL.maintenanceFinish( message );
+      }
+    });
+  }
+
+  /**
+   * rolesValidator
+   * @date 2020-09-09
+   * @param {any} msg
+   * @param {any} rolesString
+   * @return {any}
+   */
+  static rolesValidator( msg, rolesString ) {
+    const msgRoleIds= msg.member.roles.array().map((x) => x.id);
+    const rolesIds= JSON.parse(rolesString);
+    if (!msgRoleIds.some((x)=> rolesIds.includes(x))) {
+      return true;
+    }
+    return false;
   }
 }
 

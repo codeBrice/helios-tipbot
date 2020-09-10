@@ -11,7 +11,7 @@
     "max_tip_roulette": "The bet is much higher for the maximum allowed",
     "balance_error": "An error has occurred consulting your balance.",
     "balance": "Your balance is: ",
-    "wallet_error": "An error has occurred consulting your waallet.",
+    "wallet_error": "An error has occurred consulting the wallet.",
     "wallet": "Your wallet is: ",
     "general_transaction_fail": "An error has ocurred sending the HLS.",
     "not_gas": "You don't have enough gas to send the tip",

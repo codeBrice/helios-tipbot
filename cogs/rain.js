@@ -18,7 +18,7 @@ class Rain {
 
     async rain( msg ) {
         try {
-            if ( UTIL.isDmChannel( msg.channel.type ) )
+            if ( Util.isDmChannel( msg.channel.type ) )
                 return;
 
             let getActiveUsers = await this.getActiveUser( msg );
@@ -94,7 +94,7 @@ class Rain {
 
     async update_activity_user( msg ){
         try {
-            if ( UTIL.isDmChannel( msg.channel.type ) || msg.content.length < 15 )
+            if ( Util.isDmChannel( msg.channel.type ) || msg.content.length < 15 )
                 return;
 
             global.clientRedis.get('activity:'+msg.author.id+msg.guild.id, function(err, activity) {
