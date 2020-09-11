@@ -1,17 +1,12 @@
 const Helios = require('../middleware/helios');
 const SendTransaction = require('../entities/SendTransactions');
-const HELIOS = new Helios();
 const MessageUtil = require('../util/Discord/message');
-const MESSAGEUTIL = new MessageUtil();
-const UserInfoController = require('../controllers/userinfo.controller');
-const USERINFO = new UserInfoController();
+const userInfoController = require('../controllers/userinfo.controller');
 const RouletteController = require('../controllers/roulette.controller');
 require('dotenv').config();
 const envConfig = process.env;
 const TransactionQueueController = require('../controllers/transaction.queue.controller');
-const TRANSACTIONQUEUECONTROLLER = new TransactionQueueController();
 const Transaction = require('../controllers/transactions.controller');
-const TRANSACTION = new Transaction();
 const conf = require('../config.js').jsonConfig();
 const logger = require(conf.pathLogger).getHeliosBotLogger();
 const Discord = require('discord.js');
@@ -45,36 +40,38 @@ class Util {
     return parseFloat(amount);
   }
 
+
   /**
-   * Array Transaction
-   * @date 2020-08-28
-   * @param {Message} msg
-   * @param {any} user_tip_id_list
+   * arrayTransaction
+   * @date 2020-09-10
+   * @param {any} msg
+   * @param {any} userTipIdList
    * @param {any} userInfoSend
-   * @param {number} amount
-   * @param {boolean} isTip
-   * @param {boolean} isRain
-   * @return {SendTransaction[]}
+   * @param {any} amount
+   * @param {any} isTip
+   * @param {any} isRain
+   * @param {any} isTipAuthor=false
+   * @return {any}
    */
-  async arrayTransaction( msg, user_tip_id_list, userInfoSend, amount, isTip, isRain, isTipAuthor = false ) {
+  static async arrayTransaction( msg, userTipIdList, userInfoSend, amount, isTip, isRain, isTipAuthor = false ) {
     let txs = [];
     if ( !isTipAuthor ) {
-      for ( let i = 0; i < user_tip_id_list.length; i++ ) {
+      for ( let i = 0; i < userTipIdList.length; i++ ) {
         const transactionEntitie = new SendTransaction();
-        let getUserReceive = await USERINFO.getUser( user_tip_id_list[i].user_discord_id );
+        let getUserReceive = await userInfoController.getUser( userTipIdList[i].user_discord_id );
         if ( !getUserReceive ) {
-          await USERINFO.generateUserWallet( user_tip_id_list[i].user_discord_id );
-          getUserReceive = await USERINFO.getUser( user_tip_id_list[i].user_discord_id );
+          await userInfoController.generateUserWallet( userTipIdList[i].user_discord_id );
+          getUserReceive = await userInfoController.getUser( userTipIdList[i].user_discord_id );
         }
-  
+
         transactionEntitie.from = userInfoSend.wallet;
         transactionEntitie.to = getUserReceive.wallet;
         transactionEntitie.keystore_wallet = userInfoSend.keystore_wallet;
         transactionEntitie.user_discord_id_send = userInfoSend.user_discord_id;
         transactionEntitie.user_id_send = userInfoSend.id;
-        transactionEntitie.gasPrice = await HELIOS.toWei(String(await HELIOS.getGasPrice()));
+        transactionEntitie.gasPrice = await Helios.toWei(String(await Helios.getGasPrice()));
         transactionEntitie.gas = envConfig.GAS;
-        transactionEntitie.value = await HELIOS.toWeiEther((String(amount)));
+        transactionEntitie.value = await Helios.toWeiEther((String(amount)));
         transactionEntitie.user_discord_id_receive = getUserReceive.user_discord_id;
         transactionEntitie.user_id_receive = getUserReceive.id;
         transactionEntitie.helios_amount = amount;
@@ -87,9 +84,9 @@ class Util {
       transactionEntitie.keystore_wallet = userInfoSend.keystore_wallet;
       transactionEntitie.user_discord_id_send = userInfoSend.user_discord_id;
       transactionEntitie.user_id_send = userInfoSend.id;
-      transactionEntitie.gasPrice = await HELIOS.toWei(String(await HELIOS.getGasPrice()));
+      transactionEntitie.gasPrice = await Helios.toWei(String(await Helios.getGasPrice()));
       transactionEntitie.gas = envConfig.GAS;
-      transactionEntitie.value = await HELIOS.toWeiEther((String(amount)));
+      transactionEntitie.value = await Helios.toWeiEther((String(amount)));
       transactionEntitie.user_discord_id_receive = null;
       transactionEntitie.user_id_receive = null;
       transactionEntitie.helios_amount = amount;
@@ -101,29 +98,31 @@ class Util {
     if ( isQueue ) {
       if ( isTip ) {
         if ( isTipAuthor ) {
-          await TRANSACTIONQUEUECONTROLLER.create( txs, msg, true, false, true);
+          await TransactionQueueController.create( txs, msg, true, false, true);
         } else {
-          await TRANSACTIONQUEUECONTROLLER.create( txs, msg, true, false);
+          await TransactionQueueController.create( txs, msg, true, false);
         }
       }
       if ( isRain ) {
-        await TRANSACTIONQUEUECONTROLLER.create( txs, msg, false, true);
+        await TransactionQueueController.create( txs, msg, false, true);
       }
 
-      await MESSAGEUTIL.reaction_transaction_queue( msg );
+      await MessageUtil.reactionTransactionQueue( msg );
       return txs = [];
     }
     return txs;
   }
 
+
   /**
-   * Is Queue
-   * @date 2020-08-28
-   * @param {SendTransaction[]} txs
-   * @param {Message} msg
-   * @return {boolean}
+   * 描述
+   * @date 2020-09-10
+   * @param {any} txs
+   * @param {any} msg
+   * @param {any} isTipAuthor
+   * @return {any}
    */
-  async isQueue( txs, msg, isTipAuthor ) {
+  static async isQueue( txs, msg, isTipAuthor ) {
     let isQueue = false;
     let getReceive;
     let getTip;
@@ -193,17 +192,17 @@ class Util {
    * @param {any} isRain=false
    * @return {any}
    */
-  async receiveTx( transaction, msg, amount, isQueue = false, transactionQueue, isRain = false) {
+  static async receiveTx( transaction, msg, amount, isQueue = false, transactionQueue, isRain = false) {
     for ( const receive of transaction ) {
       if ( isQueue ) {
         await global.clientRedis.set( 'tip:'+receive.user_discord_id_send, receive.user_discord_id_send );
         await global.clientRedis.expire('tip:'+receive.user_discord_id_send, 11);
       }
-      const userInfoReceive = await USERINFO.getUser( receive.user_discord_id_receive );
-      const receiveTx = await TRANSACTION.receiveTransaction( receive, userInfoReceive.keystore_wallet, true, receive.user_id_send, receive.user_id_receive);
+      const userInfoReceive = await userInfoController.getUser( receive.user_discord_id_receive );
+      const receiveTx = await Transaction.receiveTransaction( receive, userInfoReceive.keystore_wallet, true, receive.user_id_send, receive.user_id_receive);
       if ( receiveTx.length > 0 ) {
         for ( const receiveTransaction of receiveTx ) {
-          const isWalletBot = await USERINFO.findByWallet( receiveTransaction.from );
+          const isWalletBot = await userInfoController.findByWallet( receiveTransaction.from );
           this.sendMsgReceive( isQueue, isRain, isWalletBot, msg, amount, transactionQueue, receiveTx, receive);
         }
       }
@@ -223,7 +222,7 @@ class Util {
    * @param {any} receive
    * @return {any}
    */
-  async sendMsgReceive( isQueue, isRain, isWalletBot, msg, amount, transactionQueue, receiveTx, receive) {
+  static async sendMsgReceive( isQueue, isRain, isWalletBot, msg, amount, transactionQueue, receiveTx, receive) {
     try {
       const fetchUser = await global.client.fetchUser( receive.user_discord_id_receive, false );
       if ( isWalletBot ) {
@@ -231,7 +230,7 @@ class Util {
         if ( !isQueue ) {
           if ( !isRain ) {
             if (receive.user_discord_id_receive !== msg.client.user.id) {
-              await fetchUser.send(MESSAGEUTIL.msg_embed('Tip receive',
+              await fetchUser.send(MessageUtil.msgEmbed('Tip receive',
                   'The user'+ msg.author + ' tip you `' + amount +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) );
             }
             if (msg.mentions.users.has(msg.client.user.id) && msg.mentions.users.array().length === 1) {
@@ -239,18 +238,18 @@ class Util {
               await RouletteController.deposit(msg.author.id, amount);
             }
           } else {
-            await fetchUser.send(MESSAGEUTIL.msg_embed('Rain receive',
+            await fetchUser.send(MessageUtil.msgEmbed('Rain receive',
                 'The user'+ msg.author + ' rain you `' + amount +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) );
           }
         } else {
           transactionQueue.isProcessed = true;
           transactionQueue.attemps += 1;
-          await TRANSACTIONQUEUECONTROLLER.update( transactionQueue.dataValues );
+          await TransactionQueueController.update( transactionQueue.dataValues );
           const fetchUser = await global.client.fetchUser( receive.user_discord_id_receive, false );
           const title = ( transactionQueue.isTip ? 'Tip receive': 'Rain receive');
           const titleDescription = ( transactionQueue.isTip ? ' tip you': ' rain you');
           if (receive.user_discord_id_receive !== msg.client.user.id) {
-            await fetchUser.send(MESSAGEUTIL.msg_embed(title,
+            await fetchUser.send(MessageUtil.msgEmbed(title,
                 'The user'+ msg.author + titleDescription +' `' + receive.helios_amount +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) );
           }
           if (msg.mentions.users.has(msg.client.user.id) && msg.mentions.users.array().length === 1) {
@@ -259,13 +258,13 @@ class Util {
           }
         }
       } else {
-        const botData = await USERINFO.getUser( global.client.user.id );
+        const botData = await userInfoController.getUser( global.client.user.id );
         if (receiveTransaction.from === botData.wallet) {
-          await fetchUser.send(MESSAGEUTIL.msg_embed('Roulette transaction recieved',
-              'The '+ global.client.user.username + ' Bot sent you `' + await HELIOS.getAmountFloat(receiveTransaction.value) +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) );
+          await fetchUser.send(MessageUtil.msgEmbed('Roulette transaction recieved',
+              'The '+ global.client.user.username + ' Bot sent you `' + await Helios.getAmountFloat(receiveTransaction.value) +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) );
         } else {
-          await fetchUser.send(MESSAGEUTIL.msg_embed('Transaction receive',
-              'The wallet '+ receiveTransaction.from + ' send you `' + await HELIOS.getAmountFloat(receiveTransaction.value) +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) );
+          await fetchUser.send(MessageUtil.msgEmbed('Transaction receive',
+              'The wallet '+ receiveTransaction.from + ' send you `' + await Helios.getAmountFloat(receiveTransaction.value) +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) );
         }
       }
     } catch (error) {
@@ -286,7 +285,7 @@ class Util {
   static amountValidator( amount, message, text ) {
     if ( typeof amount != 'number' || isNaN(amount)) {
       message.author.send(text);
-      MESSAGEUTIL.reaction_fail( message );
+      MessageUtil.reactionFail( message );
       return true;
     }
   }
@@ -301,17 +300,17 @@ class Util {
  */
   static async rouletteBalanceValidator( amount, message, text ) {
     logger.info('start rouletteBalanceValidator');
-    let user = await USERINFO.getUser( message.author.id );
+    let user = await userInfoController.getUser( message.author.id );
     if ( !user ) {
-      user = await USERINFO.generateUserWallet( message.author.id );
+      user = await userInfoController.generateUserWallet( message.author.id );
       message.author.send(text);
-      MESSAGEUTIL.reaction_fail( message );
+      MessageUtil.reactionFail( message );
       return true;
     }
     const userBalance = await RouletteController.getBalance(user.id);
     if ( amount > userBalance ) {
       message.author.send(text);
-      MESSAGEUTIL.reaction_fail( message );
+      MessageUtil.reactionFail( message );
       return true;
     }
   }
@@ -326,13 +325,13 @@ class Util {
  */
   static async botBalanceValidator( amount, message, text ) {
     logger.info('start botBalanceValidator');
-    const botBalance = await USERINFO.getBalance( message.client.user.id );
+    const botBalance = await userInfoController.getBalance( message.client.user.id );
     if ( !botBalance ) {
-      await USERINFO.generateUserWallet( message.client.user.id );
+      await userInfoController.generateUserWallet( message.client.user.id );
     }
     if ( amount >= this.parseFloat(botBalance) ) {
       message.author.send(text);
-      MESSAGEUTIL.reaction_fail( message );
+      MessageUtil.reactionFail( message );
       return true;
     }
   }
@@ -379,7 +378,7 @@ class Util {
     });
   }
 
-    /**
+  /**
    * min Max Validator
    * @date 2020-09-01
    * @param {any} amount
@@ -389,12 +388,12 @@ class Util {
   static minMaxValidator( amount, msg ) {
     if ( amount < envConfig.MINTIP ) {
       msg.author.send( msgs.min_tip + '`(' + `${envConfig.MINTIP }` +' HLS)`');
-      MESSAGEUTIL.reaction_fail( msg );
+      MessageUtil.reactionFail( msg );
       return true;
     }
     if ( amount > envConfig.MAXTIP ) {
       msg.author.send( msgs.max_tip + '`(' + `${envConfig.MAXTIP }` +' HLS)`');
-      MESSAGEUTIL.reaction_fail( msg );
+      MessageUtil.reactionFail( msg );
       return true;
     }
     return false;
@@ -410,10 +409,10 @@ class Util {
     global.clientRedis.get('maintenance', async (err, redisData) => {
       if (redisData == null) {
         global.clientRedis.set('maintenance', true);
-        MESSAGEUTIL.maintenanceInit( message );
+        MessageUtil.maintenanceInit( message );
       } else {
         global.clientRedis.del('maintenance');
-        MESSAGEUTIL.maintenanceFinish( message );
+        MessageUtil.maintenanceFinish( message );
       }
     });
   }

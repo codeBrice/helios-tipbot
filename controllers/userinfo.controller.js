@@ -1,61 +1,112 @@
 require('dotenv').config();
 const envConfig = process.env;
-const UserInfoDao = require("../dao/user.info.dao");
-const Helios = require("../middleware/helios");
-const USERINFODAO = new UserInfoDao();
-const HELIOS = new Helios();
+const UserInfoDao = require('../dao/user.info.dao');
+const Helios = require('../middleware/helios');
 
+/**
+   * UserInfoController
+   * @date 2020-09-10
+   */
 class UserInfoController {
-
-    constructor(){}
-
-    async generateUserWallet( user_discord_id ) {
-        const userDiscordId = await this.getUser( user_discord_id );
-        if ( userDiscordId == null ) {
-            const account = await HELIOS.accountCreate( envConfig.ENCRYPT_KEYSTORE );
-            await USERINFODAO.create( user_discord_id, account.account.address , JSON.stringify(account.encrypt));
-            return account;
-        }
-        return false;
+  /**
+   * generateUserWallet
+   * @date 2020-09-10
+   * @param {any} userDiscordId
+   * @return {any}
+   */
+  static async generateUserWallet( userDiscordId ) {
+    const userData = await this.getUser( userDiscordId );
+    if ( userData == null ) {
+      const account = await Helios.accountCreate( envConfig.ENCRYPT_KEYSTORE );
+      await UserInfoDao.create( userDiscordId, account.account.address, JSON.stringify(account.encrypt));
+      return account;
     }
+    return false;
+  }
 
-    async findAllUser() {
-        return await USERINFODAO.findAll();
-    }
+  /**
+   * findAllUser
+   * @date 2020-09-10
+   * @return {any}
+   */
+  static async findAllUser() {
+    return await UserInfoDao.findAll();
+  }
 
-    async getUser( user_discord_id ) {
-        return await USERINFODAO.findByUserDiscordId( user_discord_id );
-    }
+  /**
+   * getUser
+   * @date 2020-09-10
+   * @param {any} userDiscordId
+   * @return {any}
+   */
+  static async getUser( userDiscordId ) {
+    return await UserInfoDao.findByUserDiscordId( userDiscordId );
+  }
 
-    async getBalance( user_discord_id ){
-        const userInfo = await this.getUser( user_discord_id );
-        return await HELIOS.getBalance( userInfo.wallet );
-    }
+  /**
+   * getBalance
+   * @date 2020-09-10
+   * @param {any} userDiscordId
+   * @return {any}
+   */
+  static async getBalance( userDiscordId ) {
+    const userInfo = await this.getUser( userDiscordId );
+    return await Helios.getBalance( userInfo.wallet );
+  }
 
-    async getBalanceInWei( user_discord_id ){
-        const userInfo = await USERINFODAO.findByUserDiscordId( user_discord_id );
-        return await HELIOS.getBalanceInwei( userInfo.wallet );
-    }
+  /**
+   * getBalanceInWei
+   * @date 2020-09-10
+   * @param {any} userDiscordId
+   * @return {any}
+   */
+  static async getBalanceInWei( userDiscordId ) {
+    const userInfo = await UserInfoDao.findByUserDiscordId( userDiscordId );
+    return await Helios.getBalanceInwei( userInfo.wallet );
+  }
 
-    async getPrivateKey( user_discord_id ){
-        const userInfo = await USERINFODAO.findByUserDiscordId( user_discord_id );
-        const privateKey = await HELIOS.jsonToAccount( userInfo.keystore_wallet , envConfig.ENCRYPT_KEYSTORE);
-        return privateKey.privateKey;
-    }
+  /**
+   * getPrivateKey
+   * @date 2020-09-10
+   * @param {any} userDiscordId
+   * @return {any}
+   */
+  static async getPrivateKey( userDiscordId ) {
+    const userInfo = await UserInfoDao.findByUserDiscordId( userDiscordId );
+    const privateKey = await Helios.jsonToAccount( userInfo.keystore_wallet, envConfig.ENCRYPT_KEYSTORE);
+    return privateKey.privateKey;
+  }
 
-    async getWallet( user_discord_id ){
-        const userInfoWallet = await USERINFODAO.findByUserDiscordId( user_discord_id );
-        return userInfoWallet.wallet;
-    }
+  /**
+   * getWallet
+   * @date 2020-09-10
+   * @param {any} userDiscordId
+   * @return {any}
+   */
+  static async getWallet( userDiscordId ) {
+    const userInfoWallet = await UserInfoDao.findByUserDiscordId( userDiscordId );
+    return userInfoWallet.wallet;
+  }
 
-    async getGasPriceSumAmount( amount ){
-        const sumAmount = await HELIOS.gasPriceSumAmount( amount, envConfig.GAS );
-        return sumAmount;
-    }
+  /**
+   * getGasPriceSumAmount
+   * @date 2020-09-10
+   * @param {any} amount
+   * @return {any}
+   */
+  static async getGasPriceSumAmount( amount ) {
+    const sumAmount = await Helios.gasPriceSumAmount( amount, envConfig.GAS );
+    return sumAmount;
+  }
 
-    async findByWallet( wallet ) {
-        return await USERINFODAO.findByWallet( wallet );
-    }
-
+  /**
+   * findByWallet
+   * @date 2020-09-10
+   * @param {any} wallet
+   * @return {any}
+   */
+  static async findByWallet( wallet ) {
+    return await UserInfoDao.findByWallet( wallet );
+  }
 }
 module.exports = UserInfoController;

@@ -13,7 +13,7 @@ class RouletteDao {
    * @param {any} amount
    * @return {any}
    */
-  async create( userDiscordId, amount) {
+  static async create( userDiscordId, amount) {
     try {
       return roulettes.create({
         user_info_id: userDiscordId,
@@ -31,7 +31,7 @@ class RouletteDao {
    * @param {any} userDiscordId
    * @return {any}
    */
-  async findByUserDiscordId( userDiscordId ) {
+  static async findByUserDiscordId( userDiscordId ) {
     try {
       return roulettes.findOne({
         where: {
@@ -50,7 +50,7 @@ class RouletteDao {
    * @param {any} amount
    * @return {any}
    */
-  async update( userDiscordId, amount) {
+  static async update( userDiscordId, amount) {
     try {
       return roulettes.update({
         helios_amount: amount,
@@ -70,7 +70,7 @@ class RouletteDao {
    * @date 2020-09-07
    * @return {any}
    */
-  async allBalance() {
+  static async allBalance() {
     try {
       return roulettes.sum('helios_amount');
     } catch (error) {

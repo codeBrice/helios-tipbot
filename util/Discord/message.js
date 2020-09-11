@@ -1,74 +1,139 @@
-const DiscordContext = require('discord-context');
 const Discord = require('discord.js');
 require('dotenv').config();
 const envConfig = process.env;
 
-class Message {
-    reaction_fail( msg ){
-        msg.react('❌');
-    }
-    
-    reaction_dm( msg ){
-        msg.react('✉️');
-    }
-    async reaction_complete_tip( msg ) {
-        /* await msg.react('🇹');
+/**
+     * Message
+     * @date 2020-09-10
+     */
+class MessageUtil {
+  /**
+     * reaction_fail
+     * @date 2020-09-10
+     * @param {any} msg
+     */
+  static reactionFail( msg ) {
+    msg.react('❌');
+  }
+
+  /**
+   * reactionDm
+   * @date 2020-09-10
+   * @param {any} msg
+   */
+  static reactionDm( msg ) {
+    msg.react('✉️');
+  }
+
+  /**
+   * reactionCompleteTip
+   * @date 2020-09-10
+   * @param {any} msg
+   * @return {any}
+   */
+  static async reactionCompleteTip( msg ) {
+    /* await msg.react('🇹');
         await msg.react('🇮');
         await msg.react('🇵');
         await msg.react('✅'); */
-        await msg.react('💰');
-    }
+    await msg.react('💰');
+  }
 
-    async reaction_complete_rain ( msg ) {
-        /* await msg.react('🇷');
+  /**
+   * reactionCompleteRain
+   * @date 2020-09-10
+   * @param {any} msg
+   * @return {any}
+   */
+  static async reactionCompleteRain( msg ) {
+    /* await msg.react('🇷');
         await msg.react('🇦');
         await msg.react('🇮');
         await msg.react('🇳');
         await msg.react('💦'); */
-        await msg.react('🌧️');
-    }
+    await msg.react('🌧️');
+  }
 
-    async reaction_transaction_queue ( msg ) {
-        await msg.react('🕒');
-    }
+  /**
+   * reactionTransactionQueue
+   * @date 2020-09-10
+   * @param {any} msg
+   * @return {any}
+   */
+  static async reactionTransactionQueue( msg ) {
+    await msg.react('🕒');
+  }
 
-    async reaction_complete_withdraw_queue( msg ) {
-        await msg.react('🇸');
-        await msg.react('🇪');
-        await msg.react('🇳');
-        await msg.react('🇩');
-        await msg.react('✅');
-    }
+  /**
+   * reactionCompleteWithdrawQueue
+   * @date 2020-09-10
+   * @param {any} msg
+   * @return {any}
+   */
+  static async reactionCompleteWithdrawQueue( msg ) {
+    await msg.react('🇸');
+    await msg.react('🇪');
+    await msg.react('🇳');
+    await msg.react('🇩');
+    await msg.react('✅');
+  }
 
-    async maintenanceInit( msg ) {
-        await msg.react('🤖');
-        await msg.react('🚧');
-    }
+  /**
+   * maintenanceInit
+   * @date 2020-09-10
+   * @param {any} msg
+   * @return {any}
+   */
+  static async maintenanceInit( msg ) {
+    await msg.react('🤖');
+    await msg.react('🚧');
+  }
 
-    async maintenanceFinish( msg ) {
-        await msg.react('🤖');
-        await msg.react('✅');
-    }
+  /**
+   * maintenanceFinish
+   * @date 2020-09-10
+   * @param {any} msg
+   * @return {any}
+   */
+  static async maintenanceFinish( msg ) {
+    await msg.react('🤖');
+    await msg.react('✅');
+  }
 
-    msg_embed( title, description, isTip = false , url = '', isWfu = false ){
-        // inside a command, event listener, etc.
-        let exampleEmbed = new Discord.RichEmbed()
+  /**
+   * msgEmbed
+   * @date 2020-09-10
+   * @param {any} title
+   * @param {any} description
+   * @param {any} isTip=false
+   * @param {any} url=''
+   * @param {any} isWfu=false
+   * @return {any}
+   */
+  static msgEmbed( title, description, isTip = false, url = '', isWfu = false ) {
+    // inside a command, event listener, etc.
+    const exampleEmbed = new Discord.RichEmbed()
         .setColor('#e6d46a')
         .setTitle(title)
-        .setDescription(description)
-        
-        if ( isTip ) {
-            exampleEmbed.addField('Check transaction in explorer', url);
-        }
+        .setDescription(description);
 
-        if ( isWfu ) {
-            exampleEmbed.addField('Check wallet in explorer', url);
-        }
-        return exampleEmbed;
+    if ( isTip ) {
+      exampleEmbed.addField('Check transaction in explorer', url);
     }
 
-    msg_embed_help() {
-        let exampleEmbed = new Discord.RichEmbed()
+    if ( isWfu ) {
+      exampleEmbed.addField('Check wallet in explorer', url);
+    }
+    return exampleEmbed;
+  }
+
+  /**
+   * msgEmbedHelp
+   * @date 2020-09-10
+   * @return {any}
+   */
+  static msgEmbedHelp() {
+    const exampleEmbed = new Discord.RichEmbed()
         .setColor('#e6d46a')
         .setTitle('Helios TipBot v1.1.0 edition')
         .setDescription('Use '+envConfig.ALIASCOMMAND+'help command for more information about a specific command')
@@ -81,13 +146,18 @@ class Message {
         .addField(envConfig.ALIASCOMMAND+'withdraw ', 'Withdraw HELIOS to an external address')
         .addField(envConfig.ALIASCOMMAND+'rain ', 'Distribute a tip amount amongst active users')
         .addField(envConfig.ALIASCOMMAND+'price ', 'Get Helios price')
-        .addField(envConfig.ALIASCOMMAND+'tipauthor ', 'Send a tip to dev wallet.')
+        .addField(envConfig.ALIASCOMMAND+'tipauthor ', 'Send a tip to dev wallet.');
 
-        return exampleEmbed;
-    }
+    return exampleEmbed;
+  }
 
-    roulette_msg_embed_help() {
-        let exampleEmbed = new Discord.RichEmbed()
+  /**
+   * rouletteMsgEmbedHelp
+   * @date 2020-09-10
+   * @return {any}
+   */
+  static rouletteMsgEmbedHelp() {
+    const exampleEmbed = new Discord.RichEmbed()
         .setColor('#e6d46a')
         .setTitle('Helios TipBot v1.0.0 roulette edition')
         .setDescription('Use '+envConfig.ALIASCOMMAND+'rhelp command for more information about a specific command')
@@ -98,8 +168,8 @@ class Message {
         .addField(envConfig.ALIASCOMMAND+'sb ', 'start bet on the color black')
         .addField(envConfig.ALIASCOMMAND+'sg ', 'start bet on the color green')
         .addField(envConfig.ALIASCOMMAND+'rlastwin '+envConfig.ALIASCOMMAND+'rlw ', 'Shows the last 10 roulettes')
-        .addField(envConfig.ALIASCOMMAND+'rbankroll '+envConfig.ALIASCOMMAND+'rbr ', 'Shows BankRoll')
-        return exampleEmbed;
-    }
+        .addField(envConfig.ALIASCOMMAND+'rbankroll '+envConfig.ALIASCOMMAND+'rbr ', 'Shows BankRoll');
+    return exampleEmbed;
+  }
 }
-module.exports = Message
+module.exports = MessageUtil;

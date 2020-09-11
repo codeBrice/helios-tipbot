@@ -1,6 +1,5 @@
 require('dotenv').config();
 const RouletteHistoricDao = require('../dao/roulette.historic.dao');
-const ROULETTEHDAO = new RouletteHistoricDao();
 const conf = require('../config.js').jsonConfig();
 const logger = require(conf.pathLogger).getHeliosBotLogger();
 
@@ -18,7 +17,7 @@ class RouletteHistoricController {
    */
   static async init( json, number, isFinish ) {
     logger.info('start roulette.hictoric init');
-    return await ROULETTEHDAO.create( json, number, isFinish );
+    return await RouletteHistoricDao.create( json, number, isFinish );
   }
 
   /**
@@ -30,7 +29,7 @@ class RouletteHistoricController {
    */
   static async updateHistoric( id, isFinish) {
     logger.info('start roulette.hictoric updateHistoric');
-    return await ROULETTEHDAO.update( id, isFinish);
+    return await RouletteHistoricDao.update( id, isFinish);
   }
 
   /**
@@ -40,7 +39,7 @@ class RouletteHistoricController {
    */
   static async getLastWins() {
     logger.info('start getLastWins');
-    return await ROULETTEHDAO.getLastWins();
+    return await RouletteHistoricDao.getLastWins();
   }
 
   /**
@@ -50,7 +49,7 @@ class RouletteHistoricController {
    */
   static async getCommissions() {
     logger.info('start getCommissions');
-    return await ROULETTEHDAO.getCommissions();
+    return await RouletteHistoricDao.getCommissions();
   }
 
   /**
@@ -61,7 +60,7 @@ class RouletteHistoricController {
    */
   static async updateCommissions(ids) {
     logger.info('start updateCommissions');
-    return await ROULETTEHDAO.updateCommissions(ids);
+    return await RouletteHistoricDao.updateCommissions(ids);
   }
 }
 module.exports = RouletteHistoricController;

@@ -14,7 +14,7 @@ class RouletteHistoricDao {
    * @param {any} isFinish
    * @retunpx sequelize-cli db:migratern {any}
    */
-  async create( json, number, isFinish) {
+  static async create( json, number, isFinish) {
     try {
       return roulette_historic.create({
         bets: json,
@@ -33,7 +33,7 @@ class RouletteHistoricDao {
    * @param {any} userDiscordId
    * @return {any}
    */
-  async findId( userDiscordId ) {
+  static async findId( userDiscordId ) {
     try {
       return roulette_historic.findOne({
         where: {
@@ -52,7 +52,7 @@ class RouletteHistoricDao {
    * @param {any} isFinish
    * @return {any}
    */
-  async update( id, isFinish) {
+  static async update( id, isFinish) {
     try {
       return roulette_historic.update({
         isFinish: isFinish,
@@ -72,7 +72,7 @@ class RouletteHistoricDao {
    * @date 2020-09-07
    * @return {any}
    */
-  async getLastWins() {
+  static async getLastWins() {
     try {
       return roulette_historic.findAll({
         order: [
@@ -90,7 +90,7 @@ class RouletteHistoricDao {
    * @date 2020-09-07
    * @return {any}
    */
-  async getCommissions() {
+  static async getCommissions() {
     try {
       return roulette_historic.findAll({
         where: {
@@ -108,7 +108,7 @@ class RouletteHistoricDao {
    * @param {any} ids
    * @return {any}
    */
-  async updateCommissions(ids) {
+  static async updateCommissions(ids) {
     try {
       return roulette_historic.update({
         isCharged: true,

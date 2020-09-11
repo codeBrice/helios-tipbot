@@ -1,3 +1,5 @@
+require('dotenv').config();
+const envConfig = process.env;
 const Util = require('../util/util');
 const msgs = require('../util/msg.json');
 const conf = require('../config.js').jsonConfig();
@@ -7,17 +9,6 @@ const RouletteHisController = require('../controllers/roulette.historic.controll
 const MessageUtil = require('../util/Discord/message');
 const RouletteUser = require('../entities/RouletteUser');
 const UserInfoController = require('../controllers/userinfo.controller');
-const SendTransaction = require('../entities/SendTransactions');
-const Helios = require('../middleware/helios');
-const TransactionQueueController = require('../controllers/transaction.queue.controller');
-const TransactionController = require('../controllers/transactions.controller');
-
-const transactionController = new TransactionController();
-const messageUtil = new MessageUtil();
-const envConfig = process.env;
-const transactionQueueController = new TransactionQueueController();
-const userInfo = new UserInfoController();
-const helios = new Helios();
 
 const red = '🟥';
 const black = '⬛';
@@ -75,7 +66,7 @@ exports.execute = async (message) => {
         if (roulette.users.filter((x) =>
           x.discordId === String(message.author.id)).length > 0 ||
           roulette.start == true) {
-          messageUtil.reaction_fail( message );
+          MessageUtil.reactionFail( message );
           return;
         }
         roulette.users.push(
@@ -104,7 +95,7 @@ async function rouletteInit(message) {
     if (redisUser != null) {
       const roulette = JSON.parse(redisUser);
       if (roulette.start == true) {
-        messageUtil.reaction_fail( message );
+        MessageUtil.reactionFail( message );
         return;
       }
       roulette.start = true;
@@ -279,10 +270,10 @@ function winnerAmount(command, amount) {
    */
 async function bankrollValidator( bets, message, win, text ) {
   logger.info('start bankroll Validator');
-  const botBalance = await userInfo.getBalance( message.client.user.id );
+  const botBalance = await UserInfoController.getBalance( message.client.user.id );
 
   if ( !botBalance ) {
-    await userInfo.generateUserWallet( message.client.user.id );
+    await UserInfoController.generateUserWallet( message.client.user.id );
     message.channel.send(text);
     return true;
   }
@@ -313,165 +304,17 @@ async function bankrollValidator( bets, message, win, text ) {
 function minMaxValidatorRoulette( amount, msg ) {
   if ( amount < envConfig.MINTIP_BET ) {
     msg.author.send( msgs.min_tip_roulette + '`(' + `${envConfig.MINTIP_BET }` +' HLS)`');
-    messageUtil.reaction_fail( msg );
+    MessageUtil.reactionFail( msg );
     return true;
   }
   if ( amount > envConfig.MAXTIP_BET ) {
     msg.author.send( msgs.max_tip_roulette + '`(' + `${envConfig.MAXTIP_BET }` +' HLS)`');
-    messageUtil.reaction_fail( msg );
+    MessageUtil.reactionFail( msg );
     return true;
   }
   return false;
 }
 
-
-/**
-  * lastWins
-  * @date 2020-09-07
-  * @param {any} message
-  * @return {any}
-  */
-exports.lastWins = async (message) => {
-  const list = await RouletteHisController.getLastWins();
-  const msg = list.map((currentValue, index, array) => {
-    return color(parseFloat(currentValue.winNumber),
-        (index+1)+'. '+green+'\n',
-        (index+1)+'. '+red+'\n',
-        (index+1)+'. '+black+'\n');
-  });
-  const title = 'Last 10 roll result';
-  const embed = Util.embedConstructor(title, msg);
-  await message.channel.send(embed);
-};
-
-/**
- * 描述
- * @date 2020-09-07
- * @param {any} message
- * @param {any} text
- * @return {any}
- */
-exports.bankroll = async (message) => {
-  logger.info('start bankroll');
-
-  const channels = JSON.parse(envConfig.ONLY_CHANNELS_ROULETTE);
-  if (Util.channelValidator(message, channels)) return;
-
-  const botBalance = await userInfo.getBalance( message.client.user.id );
-  if ( !botBalance ) {
-    await userInfo.generateUserWallet( message.client.user.id );
-    return true;
-  }
-
-  const total = await RouletteController.getAllBalance();
-
-  const title = 'BankRoll:';
-  const embed = Util.embedConstructor(title, (parseFloat(botBalance) - total)+' HLS');
-  await message.channel.send(embed);
-};
-
-
-/**
-   * getRouletteBalance
-   * @date 2020-09-01
-   * @param {any} msg
-   * @return {any}
-   */
-exports.getRouletteBalance = async ( msg ) => {
-  try {
-    logger.info('start getRouletteBalance');
-    const user = await userInfo.getUser( msg.author.id );
-    if ( !user ) {
-      await userInfo.generateUserWallet( msg.author.id );
-      msg.author.send( messageUtil.msg_embed('Roulette Balance',
-          msgs.balance + 0 + ' HLS') );
-      return;
-    }
-    const userBalance = await RouletteController.getBalance(user.id);
-    if ( userBalance != null ) {
-      msg.author.send( messageUtil.msg_embed('Roulette Balance',
-          msgs.balance + userBalance + ' HLS') );
-      const isDm = Util.isDmChannel( msg.channel.type );
-      if ( !isDm ) {
-        messageUtil.reaction_dm( msg );
-      }
-    } else {
-      msg.author.send( msgs.balance_error );
-    }
-  } catch (error) {
-    logger.error( error );
-  }
-};
-
-/**
-   * withdrawRoulette
-   * @date 2020-09-01
-   * @param {any} msg
-   * @return {any}
-   */
-exports.withdrawRoulette = async ( msg ) => {
-  try {
-    logger.info('start withdrawRoulette');
-    if ( Util.isDmChannel(msg.channel.type) ) {
-      const amount = parseFloat( global.ctx.args[1] );
-      // Amount Validate
-      if (Util.amountValidator(amount, msg, msgs.invalid_command+
-          ` example: ${global.client.config.PREFIX}rwithdraw 10`)) return;
-
-      const amountGas = await userInfo.getGasPriceSumAmount( amount );
-
-      if (await Util.rouletteBalanceValidator(amountGas, msg,
-          msgs.amount_gas_error +
-            ', remember to have enough gas for the transaction.')) return;
-
-      if (await Util.botBalanceValidator(amountGas, msg,
-          msgs.bot_amount_gas_error)) return;
-
-      const userTipIdList = [];
-      const botData = await userInfo.getUser( msg.client.user.id );
-      userTipIdList.push( {user_discord_id: msg.author.id,
-        tag: msg.author.username} );
-      // transaction object
-      const toUser = await userInfo.getUser( msg.author.id );
-      const tx = [];
-      const transactionEntitie = new SendTransaction();
-      transactionEntitie.from = botData.wallet;
-      transactionEntitie.to = toUser.wallet;
-      transactionEntitie.gasPrice = await helios.toWei(String(await helios.getGasPrice()));
-      transactionEntitie.gas = envConfig.GAS;
-      transactionEntitie.value = await helios.toWeiEther((String(amount)));
-      transactionEntitie.keystore_wallet = botData.keystore_wallet;
-      tx.push( transactionEntitie );
-      const getReceive = await new Promise( ( resolve, reject ) => {
-        return global.clientRedis.get('receive:'+msg.author.id, async function(err, receive) {
-          resolve(receive);
-        });
-      });
-      const getTip = await new Promise( ( resolve, reject ) => {
-        return global.clientRedis.get('tip:'+msg.author.id, async function(err, tip) {
-          resolve(tip);
-        });
-      });
-      if ( getReceive || getTip) {
-        await transactionQueueController.create( tx, msg, false, false);
-        messageUtil.reaction_transaction_queue( msg );
-        return;
-      }
-      const sendTx = await transactionController.sendTransaction( tx, botData.keystore_wallet);
-      if ( !sendTx.length ) {
-        global.clientRedis.set( 'tip:'+msg.author.id, msg.author.id );
-        global.clientRedis.expire('tip:'+msg.author.id, 11);
-        msg.author.send( msgs.error_withdraw + envConfig.ALIASCOMMAND + 'withdraw 100 0x00000' );
-        logger.error( error );
-      } else {
-        await RouletteController.updateBalance(msg.author.id, amountGas, false);
-        msg.author.send(messageUtil.msg_embed('Withdraw process', msgs.withdraw_success));
-      }
-    } else {
-      msg.delete( msg );
-      msg.author.send( msgs.direct_message + ' (`rwithdraw`)' );
-    }
-  } catch (error) {
-    logger.error( error );
-  }
+exports.info = {
+  alias: ['sg', 'sr', 'sb'],
 };

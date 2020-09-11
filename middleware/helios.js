@@ -1,48 +1,50 @@
 const Web3 = require('helios-web3');
-const formatters =  require('web3-core-helpers');
+const formatters = require('web3-core-helpers');
 const Account = require('../entities/Account');
 const Transaction = require('../entities/Transaction');
-/*import { HlsUtils } from '../utils/hls-utils';
+/* import { HlsUtils } from '../utils/hls-utils';
 import { promise } from 'protractor'; */
 
+const availableNodes = [
+  'wss://bootnode.heliosprotocol.io:30304',
+  'wss://bootnode2.heliosprotocol.io:30304',
+  'wss://bootnode3.heliosprotocol.io:30304',
+  'wss://masternode1.heliosprotocol.io:30304',
+];
+let web3 = null;
+
+/**
+   * Helios
+   * @date 2020-09-10
+   */
 class Helios {
-
-  constructor(  ) {
-    this.web3 = null;
-    this.availableNodes = [
-      'wss://bootnode.heliosprotocol.io:30304',
-      'wss://bootnode2.heliosprotocol.io:30304',
-      'wss://bootnode3.heliosprotocol.io:30304',
-      'wss://masternode1.heliosprotocol.io:30304'
-    ];
-  }
-
   /**
    * Connects to first available node.
-   * @returns  true : Successfully connected  or Error Failed to connect.
+   * @date 2020-09-10
+   * @return {any} true : Successfully connected  or Error Failed to connect.
    */
-  async connectToFirstAvailableNode() {
-    //console.log(`connectToFirstAvailableNode`);
+  static async connectToFirstAvailableNode() {
+    // console.log(`connectToFirstAvailableNode`);
     try {
-      if (this.web3 && !(this.web3.currentProvider == null || !this.web3.currentProvider.connected)) {
+      if (web3 && !(web3.currentProvider == null || !web3.currentProvider.connected)) {
         return true;
       } else {
-        for (const node of this.availableNodes) {
-            //console.log(`Connecting to node ${node}`);
-            this.web3 = new Web3(new Web3.providers.WebsocketProvider(node));
-            // this.web3.extend(this.methods);
-            // console.log(this.web3);
-            try {
-              const listen = await this.web3.eth.net.isListening();
-              // await this.web3.eth.net.getPeerCount();
-              if (this.isConnected() || listen) {
-                  //console.log(`Successfully connected to ${node}`);
-                  return true;
-              }
-            } catch ( error ) {
-              console.log(`Failed connected to ${node}`);
+        for (const node of availableNodes) {
+          // console.log(`Connecting to node ${node}`);
+          web3 = new Web3(new Web3.providers.WebsocketProvider(node));
+          // web3.extend(this.methods);
+          // console.log(web3);
+          try {
+            const listen = await web3.eth.net.isListening();
+            // await web3.eth.net.getPeerCount();
+            if (this.isConnected() || listen) {
+              // console.log(`Successfully connected to ${node}`);
+              return true;
             }
-            // console.log( ' listening: ' + isListening.toString() + ' with ' + numPeers + ' peers');
+          } catch ( error ) {
+            console.log(`Failed connected to ${node}`);
+          }
+          // console.log( ' listening: ' + isListening.toString() + ' with ' + numPeers + ' peers');
         }
         throw new Error('Failed to connect to nodes');
       }
@@ -54,7 +56,9 @@ class Helios {
 
   /**
    * Accounts create.
-   * @returns  account
+   * @date 2020-09-10
+   * @param {any} password
+   * @return  account
    * {
    *  address: "0xb8CE9ab6943e0eCED004cDe8e3bBed6568B2Fa01",
    *  privateKey: "0x348ce564d427a3311b6536bbcff9390d69395b06ed6c486954e971d960fe8709",
@@ -63,14 +67,14 @@ class Helios {
    *  encrypt: function(password){...}
    * }
    */
-  async accountCreate(password) {
+  static async accountCreate(password) {
     try {
       console.log('accountsCreate');
       if (await this.isConnected()) {
-        const preAccount = await this.web3.hls.accounts.create();
-        const encrypt = await this.web3.eth.accounts.encrypt(preAccount.privateKey, password);
+        const preAccount = await web3.hls.accounts.create();
+        const encrypt = await web3.eth.accounts.encrypt(preAccount.privateKey, password);
         const account = new Account(preAccount, encrypt);
-        //console.log(account);
+        // console.log(account);
         return account;
       }
     } catch (error) {
@@ -79,16 +83,23 @@ class Helios {
     }
   }
 
-  async privateKeyToAccount(privateKey, password) {
+  /**
+   * privateKeyToAccount
+   * @date 2020-09-10
+   * @param {any} privateKey
+   * @param {any} password
+   * @return {any}
+   */
+  static async privateKeyToAccount(privateKey, password) {
     try {
       console.log('privateKeyToAccount');
       if (await this.isConnected()) {
-        if(password === null){
-          const account = await this.web3.hls.accounts.privateKeyToAccount(privateKey);
+        if (password === null) {
+          const account = await web3.hls.accounts.privateKeyToAccount(privateKey);
           console.log(account);
           return account;
-        }else{
-          let encrypt =  await this.web3.hls.accounts.encrypt(privateKey, password);
+        } else {
+          const encrypt = await web3.hls.accounts.encrypt(privateKey, password);
           console.log(JSON.stringify(encrypt));
           return encrypt;
         }
@@ -99,14 +110,21 @@ class Helios {
     }
   }
 
-  async jsonToAccount(jsonAccount, password) {
+  /**
+   * jsonToAccount
+   * @date 2020-09-10
+   * @param {any} jsonAccount
+   * @param {any} password
+   * @return {any}
+   */
+  static async jsonToAccount(jsonAccount, password) {
     try {
-      //console.log('jsonAccount');
+      // console.log('jsonAccount');
       if (await this.isConnected()) {
-        const account = this.web3.hls.accounts.decrypt(JSON.parse(jsonAccount), password);
-        // const encrypt = await this.web3.eth.accounts.encrypt(preAccount.privateKey, password);
+        const account = web3.hls.accounts.decrypt(JSON.parse(jsonAccount), password);
+        // const encrypt = await web3.eth.accounts.encrypt(preAccount.privateKey, password);
         // const account = new Account(preAccount, encrypt);
-        //console.log(account);
+        // console.log(account);
         return account;
       }
     } catch (error) {
@@ -115,12 +133,19 @@ class Helios {
     }
   }
 
-  async privateKeyToJson(privateKey, password) {
+  /**
+   * privateKeyToJson
+   * @date 2020-09-10
+   * @param {any} privateKey
+   * @param {any} password
+   * @return {any}
+   */
+  static async privateKeyToJson(privateKey, password) {
     try {
       console.log('jsonAccount');
       if (await this.isConnected()) {
-        const encrypt = await this.web3.eth.accounts.encrypt(privateKey, password);
-        //console.log(encrypt);
+        const encrypt = await web3.eth.accounts.encrypt(privateKey, password);
+        // console.log(encrypt);
         return encrypt;
       }
     } catch (error) {
@@ -132,16 +157,17 @@ class Helios {
 
   /**
    * Gets balance
-   * @param address  example : 0x9c8b20E830c0Db83862892Fc141808eA6a51FEa2
-   * @returns  balance string
+   * @date 2020-09-10
+   * @param {any} address  example : 0x9c8b20E830c0Db83862892Fc141808eA6a51FEa2
+   * @return {any} balance string
    */
-  async getBalance(address) {
+  static async getBalance(address) {
     try {
       console.log('getBalance');
       if (await this.isConnected()) {
-        const hls = await this.web3.hls.getBalance(address);
-        const balance = parseFloat(this.web3.utils.fromWei(String(this.web3.utils.toBN(hls)))).toFixed(5);
-        //console.log(balance);
+        const hls = await web3.hls.getBalance(address);
+        const balance = parseFloat(web3.utils.fromWei(String(web3.utils.toBN(hls)))).toFixed(5);
+        // console.log(balance);
         return balance;
       }
     } catch (error) {
@@ -150,10 +176,16 @@ class Helios {
     }
   }
 
-  async getAmountFloat(amount) {
+  /**
+   * getAmountFloat
+   * @date 2020-09-10
+   * @param {any} amount
+   * @return {any}
+   */
+  static async getAmountFloat(amount) {
     try {
       if (await this.isConnected()) {
-        const balance = parseFloat(this.web3.utils.fromWei(String(this.web3.utils.toBN(amount)))).toFixed(5);
+        const balance = parseFloat(web3.utils.fromWei(String(web3.utils.toBN(amount)))).toFixed(5);
         return balance;
       }
     } catch (error) {
@@ -161,17 +193,18 @@ class Helios {
       throw new Error('Failed to get amountfloat');
     }
   }
-    /**
+  /**
    * Gets balance
-   * @param address  example : 0x9c8b20E830c0Db83862892Fc141808eA6a51FEa2
-   * @returns  balance string
+   * @date 2020-09-10
+   * @param {any} address  example : 0x9c8b20E830c0Db83862892Fc141808eA6a51FEa2
+   * @return {any} balance string
    */
-  async getBalanceInwei( address ) {
+  static async getBalanceInwei( address ) {
     try {
       console.log('getBalance');
       if (await this.isConnected()) {
-        const hls = await this.web3.hls.getBalance(address);
-        //console.log(balance);
+        const hls = await web3.hls.getBalance(address);
+        // console.log(balance);
         return hls;
       }
     } catch (error) {
@@ -179,15 +212,17 @@ class Helios {
       throw new Error('Failed to get balance');
     }
   }
+
   /**
    * Gets gas price
-   * @returns  number
+   * @date 2020-09-10
+   * @return {any}
    */
-  async getGasPrice() {
+  static async getGasPrice() {
     try {
       console.log('getBalance');
       if (await this.isConnected()) {
-        const gasPrice = await this.web3.hls.getGasPrice();
+        const gasPrice = await web3.hls.getGasPrice();
         return gasPrice;
       }
     } catch (error) {
@@ -196,21 +231,30 @@ class Helios {
     }
   }
 
-  async getAllTransactions(address, startDate, endDate, startIndex, length) {
+  /**
+   * getAllTransactions
+   * @date 2020-09-10
+   * @param {any} address
+   * @param {any} startDate
+   * @param {any} endDate
+   * @param {any} startIndex
+   * @param {any} length
+   * @return {any}
+   */
+  static async getAllTransactions(address, startDate, endDate, startIndex, length) {
     try {
       console.log('getAllTransactions');
 
       if (await this.isConnected()) {
-
         if (!(startIndex || false)) {
           startIndex = 0;
         }
 
         if (!(length || false)) {
-            length = 10;
+          length = 10;
         }
 
-        let startBlockNumber = await this.web3.hls.getBlockNumber(address, startDate);
+        let startBlockNumber = await web3.hls.getBlockNumber(address, startDate);
 
         startBlockNumber = startBlockNumber - startIndex;
         let endBlockNumber = startBlockNumber - length;
@@ -221,63 +265,63 @@ class Helios {
         const output = [];
         const blocksPromise = [];
         for (let i = startBlockNumber; i >= endBlockNumber; i--) {
-           // console.log('Getting all transactions at block number ' + i);
-           blocksPromise.push(new Promise(async (resolve, reject) => {
+          // console.log('Getting all transactions at block number ' + i);
+          blocksPromise.push(new Promise(async (resolve, reject) => {
             try {
-              const newBlock = await this.web3.hls.getBlockByNumber(i, address, true);
+              const newBlock = await web3.hls.getBlockByNumber(i, address, true);
               // console.log(newBlock);
               // comentado por que se creo en promesa
               if (newBlock.timestamp > startDate) {
-               return;
+                return;
               }
               /* if (newBlock.timestamp > endDate) {
                 return;
               } */
               if (newBlock.transactions.length > 0) {
-                 for (const transactionBlock of newBlock.transactions) {
-                     const tx = transactionBlock;
-                     output.push(new Transaction(newBlock.timestamp, 'Send transaction',
-                       formatters.outputBigNumberFormatter(this.web3.utils.toBN(tx.value).mul(this.web3.utils.toBN(-1))),
-                       formatters.outputBigNumberFormatter(this.web3.utils.toBN(tx.gasUsed)
-                         .mul(this.web3.utils.toBN(tx.gasPrice)).mul(this.web3.utils.toBN(-1))),
-                       tx.to, address, formatters.outputBigNumberFormatter(newBlock.accountBalance), newBlock.number));
-                 }
+                for (const transactionBlock of newBlock.transactions) {
+                  const tx = transactionBlock;
+                  output.push(new Transaction(newBlock.timestamp, 'Send transaction',
+                      formatters.outputBigNumberFormatter(web3.utils.toBN(tx.value).mul(web3.utils.toBN(-1))),
+                      formatters.outputBigNumberFormatter(web3.utils.toBN(tx.gasUsed)
+                          .mul(web3.utils.toBN(tx.gasPrice)).mul(web3.utils.toBN(-1))),
+                      tx.to, address, formatters.outputBigNumberFormatter(newBlock.accountBalance), newBlock.number));
+                }
               }
               if (newBlock.receiveTransactions.length > 0) {
-                 for (const receiveTransactions of newBlock.receiveTransactions) {
-                     const tx = receiveTransactions;
-                     let description;
-                     if (tx.isRefund) {
-                         description = 'Refund transaction';
-                     } else {
-                         description = 'Receive transaction';
-                     }
-                     output.push(new Transaction(newBlock.timestamp, description,
-                       formatters.outputBigNumberFormatter(tx.value),
-                       formatters.outputBigNumberFormatter(this.web3.utils.toBN(tx.gasUsed)
-                         .mul(this.web3.utils.toBN(tx.gasPrice)).mul(this.web3.utils.toBN(-1))),
-                       address, tx.from, formatters.outputBigNumberFormatter(newBlock.accountBalance), newBlock.number));
-                 }
+                for (const receiveTransactions of newBlock.receiveTransactions) {
+                  const tx = receiveTransactions;
+                  let description;
+                  if (tx.isRefund) {
+                    description = 'Refund transaction';
+                  } else {
+                    description = 'Receive transaction';
+                  }
+                  output.push(new Transaction(newBlock.timestamp, description,
+                      formatters.outputBigNumberFormatter(tx.value),
+                      formatters.outputBigNumberFormatter(web3.utils.toBN(tx.gasUsed)
+                          .mul(web3.utils.toBN(tx.gasPrice)).mul(web3.utils.toBN(-1))),
+                      address, tx.from, formatters.outputBigNumberFormatter(newBlock.accountBalance), newBlock.number));
+                }
               }
               if (parseFloat(newBlock.rewardBundle.rewardType2.amount.substring('2')) !== parseFloat('0')) {
-               if (formatters.outputBigNumberFormatter(newBlock.rewardBundle.rewardType2.amount) > 0) {
-                 output.push(new Transaction(newBlock.timestamp, 'Reward type 2',
-                 formatters.outputBigNumberFormatter(newBlock.rewardBundle.rewardType2.amount), 0, address, 'Coinbase',
-                 formatters.outputBigNumberFormatter(newBlock.accountBalance), newBlock.number));
-               }
+                if (formatters.outputBigNumberFormatter(newBlock.rewardBundle.rewardType2.amount) > 0) {
+                  output.push(new Transaction(newBlock.timestamp, 'Reward type 2',
+                      formatters.outputBigNumberFormatter(newBlock.rewardBundle.rewardType2.amount), 0, address, 'Coinbase',
+                      formatters.outputBigNumberFormatter(newBlock.accountBalance), newBlock.number));
+                }
               }
               resolve();
             } catch (error) {
-             console.log(error, {block: i , address});
-             reject(error);
+              console.log(error, {block: i, address});
+              reject(error);
             }
-           }));
+          }));
         }
         const promisesResult = await Promise.all(blocksPromise);
-        output.map( data  => {
-          data.value = parseFloat(this.web3.utils.fromWei(String(this.web3.utils.toBN(data.value)))).toFixed(2);
-          data.balance = parseFloat(this.web3.utils.fromWei(String(this.web3.utils.toBN(data.balance)))).toFixed(2);
-          data.gasCost = parseFloat(this.web3.utils.fromWei(String(this.web3.utils.toBN(data.gasCost)))).toFixed(2);
+        output.map( (data) => {
+          data.value = parseFloat(web3.utils.fromWei(String(web3.utils.toBN(data.value)))).toFixed(2);
+          data.balance = parseFloat(web3.utils.fromWei(String(web3.utils.toBN(data.balance)))).toFixed(2);
+          data.gasCost = parseFloat(web3.utils.fromWei(String(web3.utils.toBN(data.gasCost)))).toFixed(2);
         });
         return output;
       }
@@ -294,12 +338,19 @@ class Helios {
     }
   }
 
-  async sendTransaction(txs, privateKey) {
+  /**
+   * sendTransaction
+   * @date 2020-09-10
+   * @param {any} txs
+   * @param {any} privateKey
+   * @return {any}
+   */
+  static async sendTransaction(txs, privateKey) {
     try {
       console.log('sendTransaction');
       if (await this.isConnected()) {
-        await this.web3.hls.accounts.wallet.add(privateKey);
-        const transaction = await this.web3.hls.sendTransactions(txs);
+        await web3.hls.accounts.wallet.add(privateKey);
+        const transaction = await web3.hls.sendTransactions(txs);
         return transaction;
       }
     } catch (error) {
@@ -308,15 +359,22 @@ class Helios {
     }
   }
 
-  async getReceivableTransactions(address , privateKey) {
+  /**
+   * getReceivableTransactions
+   * @date 2020-09-10
+   * @param {any} address
+   * @param {any} privateKey
+   * @return {any}
+   */
+  static async getReceivableTransactions(address, privateKey) {
     try {
       console.log('getReceivableTransactions');
       if (await this.isConnected()) {
-        const receivableTxs = await this.web3.hls.getReceivableTransactions(address);
+        const receivableTxs = await web3.hls.getReceivableTransactions(address);
         console.log(receivableTxs);
         if (receivableTxs.length > 0) {
-          await this.web3.hls.accounts.wallet.add(privateKey);
-          const sendRewardBlock = await this.web3.hls.sendRewardBlock(address);
+          await web3.hls.accounts.wallet.add(privateKey);
+          const sendRewardBlock = await web3.hls.sendRewardBlock(address);
           console.log(sendRewardBlock);
           return receivableTxs;
         }
@@ -330,11 +388,12 @@ class Helios {
 
   /**
    * Determines whether connected is node
-   * @returns  boolean
+   * @date 2020-09-10
+   * @return {any} boolean
    */
-  async isConnected() {
+  static async isConnected() {
     try {
-      if (this.web3 && !(this.web3.currentProvider == null || !this.web3.currentProvider.connected)) {
+      if (web3 && !(web3.currentProvider == null || !web3.currentProvider.connected)) {
         return true;
       } else {
         const connect = await this.connectToFirstAvailableNode();
@@ -347,12 +406,13 @@ class Helios {
 
   /**
    * Determines whether address is
-   * @param address
-   * @returns  boolean
+   * @date 2020-09-10
+   * @param {any} address
+   * @return {any} boolean
    */
-  isAddress(address) {
+  static isAddress(address) {
     try {
-        return this.web3.utils.isAddress(address);
+      return web3.utils.isAddress(address);
     } catch (error) {
       console.log(error);
       throw new Error('Failed validate address');
@@ -361,24 +421,32 @@ class Helios {
 
   /**
    * To wei
-   * @param value
-   * @returns
+   * @date 2020-09-10
+   * @param {any} value
+   * @return {any}
    */
-  toWei(value) {
+  static toWei(value) {
     try {
-        return this.web3.utils.toWei(value, 'Gwei');
+      return web3.utils.toWei(value, 'Gwei');
     } catch (error) {
       console.log(error);
       throw new Error('Failed toWei');
     }
   }
 
-  async gasPriceSumAmount( amount , gasPrice){
+  /**
+   * gasPriceSumAmount
+   * @date 2020-09-10
+   * @param {any} amount
+   * @param {any} gasPrice
+   * @returns {any}
+   */
+  static async gasPriceSumAmount( amount, gasPrice) {
     try {
       if (await this.isConnected()) {
-        const amountInWei = await this.web3.utils.toWei(String(amount))
-        const sum = parseFloat(this.web3.utils.fromWei(String(this.web3.utils.toBN(gasPrice)))) + 
-        parseFloat(this.web3.utils.fromWei(String(this.web3.utils.toBN(amountInWei))));
+        const amountInWei = await web3.utils.toWei(String(amount));
+        const sum = parseFloat(web3.utils.fromWei(String(web3.utils.toBN(gasPrice)))) +
+        parseFloat(web3.utils.fromWei(String(web3.utils.toBN(amountInWei))));
         return sum;
       }
     } catch (error) {
@@ -389,26 +457,33 @@ class Helios {
 
   /**
    * To weiEther
-   * @param value
-   * @returns
+   * @date 2020-09-10
+   * @param {any} value
+   * @returns {any}
    */
-  toWeiEther(value) {
+  static toWeiEther(value) {
     try {
-        return this.web3.utils.toWei(value, 'ether');
+      return web3.utils.toWei(value, 'ether');
     } catch (error) {
       console.log(error);
       throw new Error('Failed toWei');
     }
   }
 
-  async defaultWallet ( address ){
+  /**
+   * defaultWallet
+   * @date 2020-09-10
+   * @param {any} address
+   * @return {any}
+   */
+  static async defaultWallet( address ) {
     try {
-      return this.web3.hls.defaultAccount = address ;
+      return web3.hls.defaultAccount = address;
     } catch (error) {
       console.log(error);
       throw new Error('Failed set default wallet');
     }
-  } 
+  }
 }
 
 module.exports = Helios;

@@ -1,19 +1,13 @@
 const cron = require('cron');
 const UserInfo = require('../controllers/userinfo.controller');
-const USERINFO = new UserInfo();
 const TransactionController = require('../controllers/transactions.controller');
-const TRANSACTIONCONTROLLER = new TransactionController();
 const MessageUtil = require('../util/Discord/message');
-const MESSAGEUTIL = new MessageUtil();
 const Helios = require('../middleware/helios');
-const HELIOS = new Helios();
 const conf = require('../config.js').jsonConfig();
 const logger = require(conf.pathLogger).getHeliosBotLogger();
 const TransactionQueueController = require('../controllers/transaction.queue.controller');
-const TRANSACTIONQUEUECONTROLLER = new TransactionQueueController();
 const msgs = require('../util/msg.json');
 const Util = require('../util/util');
-const UTIL = new Util();
 const RouletteHistoricController = require('../controllers/roulette.historic.controller');
 const SendTransaction = require('../entities/SendTransactions');
 const envConfig = process.env;
@@ -21,7 +15,7 @@ const envConfig = process.env;
 exports.fnRunCrons = function() {
   const cronReceive = cron.job('22 */5 * * * *', async function() {
     logger.info('Start receive tx with external cron');
-    const users = await USERINFO.findAllUser();
+    const users = await UserInfo.findAllUser();
     if ( users.length ) {
       for ( const user of users ) {
         const getReceive = await new Promise( ( resolve, reject ) => {
@@ -37,17 +31,17 @@ exports.fnRunCrons = function() {
         if ( getReceive || getTip) {
           return;
         }
-        const receiveTx = await TRANSACTIONCONTROLLER.receiveTransaction({to: user.wallet}, user.keystore_wallet, false, user.id, user.id );
+        const receiveTx = await TransactionController.receiveTransaction({to: user.wallet}, user.keystore_wallet, false, user.id, user.id );
         if ( receiveTx.length ) {
           for ( const receive of receiveTx ) {
             const fetchUser = await global.client.fetchUser( user.user_discord_id, false );
-            const botData = await USERINFO.getUser( global.client.user.id );
+            const botData = await UserInfo.getUser( global.client.user.id );
             if (receive.from === botData.wallet) {
-              await fetchUser.send(MESSAGEUTIL.msg_embed('Roulette transaction recieved',
-                  'The '+ global.client.user.username + ' Bot sent you `' + await HELIOS.getAmountFloat(receive.value) +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receive.hash}`) );
+              await fetchUser.send(MessageUtil.msgEmbed('Roulette transaction recieved',
+                  'The '+ global.client.user.username + ' Bot sent you `' + await Helios.getAmountFloat(receive.value) +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receive.hash}`) );
             } else {
-              await fetchUser.send(MESSAGEUTIL.msg_embed('Transaction receive',
-                  'The wallet '+ receive.from + ' send you `' + await HELIOS.getAmountFloat(receive.value) +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receive.hash}`) );
+              await fetchUser.send(MessageUtil.msgEmbed('Transaction receive',
+                  'The wallet '+ receive.from + ' send you `' + await Helios.getAmountFloat(receive.value) +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receive.hash}`) );
             }
           }
         }
@@ -59,7 +53,7 @@ exports.fnRunCrons = function() {
   const cronTransactionQueue = cron.job('0/4 * * * * *', async function() {
     try {
       logger.info('Start transaction queue');
-      const getQueue = await TRANSACTIONQUEUECONTROLLER.findAll();
+      const getQueue = await TransactionQueueController.findAll();
       for ( const queue of getQueue ) {
         const transactionQueue = queue;
         const transactions = JSON.parse(transactionQueue.transactions);
@@ -86,7 +80,7 @@ exports.fnRunCrons = function() {
               resolve(tip);
             });
           });
-          
+
           const getTipAuthor = await new Promise( ( resolve, reject ) => {
             return global.clientRedis.get('tip:'+envConfig.DEV_WALLET, async function(err, tip) {
               resolve(tip);
@@ -105,53 +99,53 @@ exports.fnRunCrons = function() {
           }
         }
         if ( !chainTime ) {
-          const transaction = await TRANSACTIONCONTROLLER.sendTransaction( transactions, transactions[0].keystore_wallet);
-            if ( transaction.length > 0 ) {
-              if ( transactionQueue.isTipAuthor ) {
-                await global.clientRedis.set( 'tip:'+envConfig.DEV_WALLET, envConfig.DEV_WALLET);
-                await global.clientRedis.expire('tip:'+envConfig.DEV_WALLET, 11);
-              }
-              if ( !transactionQueue.isRain && !transactionQueue.isTip ) {
-                transactionQueue.isProcessed = true;
-                transactionQueue.attemps += 1;
-                await TRANSACTIONQUEUECONTROLLER.update( transactionQueue.dataValues );
-                msg.author.send(MESSAGEUTIL.msg_embed('Withdraw process', msgs.withdraw_success));
-                MESSAGEUTIL.reaction_complete_tip( msg );
-                return;
-              }
-              await msg.clearReactions();
-              if ( transactionQueue.isRain ) {
-                MESSAGEUTIL.reaction_complete_rain( msg );
-              } else {
-                MESSAGEUTIL.reaction_complete_tip( msg );
-              }
-              if ( !transactionQueue.isTipAuthor ) {
-                await UTIL.receiveTx( transaction, msg, null, true, transactionQueue );
-              } else {
-                transactionQueue.isProcessed = true;
-                transactionQueue.attemps += 1;
-                await TRANSACTIONQUEUECONTROLLER.update( transactionQueue.dataValues );
-              }
-            } else {
+          const transaction = await TransactionController.sendTransaction( transactions, transactions[0].keystore_wallet);
+          if ( transaction.length > 0 ) {
+            if ( transactionQueue.isTipAuthor ) {
+              await global.clientRedis.set( 'tip:'+envConfig.DEV_WALLET, envConfig.DEV_WALLET);
+              await global.clientRedis.expire('tip:'+envConfig.DEV_WALLET, 11);
+            }
+            if ( !transactionQueue.isRain && !transactionQueue.isTip ) {
+              transactionQueue.isProcessed = true;
               transactionQueue.attemps += 1;
-              if ( transactionQueue.attemps >= 10 ) {
-                transactionQueue.isProcessed = true;
-                transactionQueue.isProcessedFailed = true;
-                await msg.clearReactions();
-                MESSAGEUTIL.reaction_fail( msg );
-              } else {
-                transactionQueue.isProcessed = false;
-              }
-              await TRANSACTIONQUEUECONTROLLER.update( transactionQueue.dataValues );
-              logger.error( error );
+              await TransactionQueueController.update( transactionQueue.dataValues );
+              msg.author.send(MessageUtil.msgEmbed('Withdraw process', msgs.withdraw_success));
+              MessageUtil.reactionCompleteTip( msg );
               return;
             }
+            await msg.clearReactions();
+            if ( transactionQueue.isRain ) {
+              MessageUtil.reactionCompleteRain( msg );
+            } else {
+              MessageUtil.reactionCompleteTip( msg );
+            }
+            if ( !transactionQueue.isTipAuthor ) {
+              await Util.receiveTx( transaction, msg, null, true, transactionQueue );
+            } else {
+              transactionQueue.isProcessed = true;
+              transactionQueue.attemps += 1;
+              await TransactionQueueController.update( transactionQueue.dataValues );
+            }
+          } else {
+            transactionQueue.attemps += 1;
+            if ( transactionQueue.attemps >= 10 ) {
+              transactionQueue.isProcessed = true;
+              transactionQueue.isProcessedFailed = true;
+              await msg.clearReactions();
+              MessageUtil.reactionFail( msg );
+            } else {
+              transactionQueue.isProcessed = false;
+            }
+            await TransactionQueueController.update( transactionQueue.dataValues );
+            logger.error( error );
+            return;
+          }
         }
       }
     } catch (error) {
       if ( error.code != 50007 ) {
         await msg.clearReactions();
-        await MESSAGEUTIL.reaction_fail( msg );
+        await MessageUtil.reactionFail( msg );
         msg.author.send( msgs.queue_error );
         logger.error( error );
       }
@@ -170,18 +164,18 @@ exports.fnRunCrons = function() {
         }
       }
       if (commision > 1) {
-        const fromBot = await USERINFO.getUser( global.client.user.id );
+        const fromBot = await UserInfo.getUser( global.client.user.id );
         const tx = [];
         const transactionEntitie = new SendTransaction();
         transactionEntitie.from = fromBot.wallet;
         transactionEntitie.to = envConfig.COMMISSION;
-        transactionEntitie.gasPrice = await HELIOS.toWei(String(await HELIOS.getGasPrice()));
+        transactionEntitie.gasPrice = await Helios.toWei(String(await Helios.getGasPrice()));
         transactionEntitie.gas = envConfig.GAS;
-        transactionEntitie.value = await HELIOS.toWeiEther((String(commision)));
+        transactionEntitie.value = await Helios.toWeiEther((String(commision)));
         transactionEntitie.keystore_wallet = fromBot.keystore_wallet;
         tx.push( transactionEntitie );
 
-        const sendTx = await TRANSACTIONCONTROLLER.sendTransaction( tx, fromBot.keystore_wallet);
+        const sendTx = await TransactionController.sendTransaction( tx, fromBot.keystore_wallet);
         if ( sendTx.length > 0 ) {
           await RouletteHistoricController.updateCommissions(charges.map(((x) => x.id)));
         }
