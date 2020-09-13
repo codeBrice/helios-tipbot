@@ -51,11 +51,12 @@ exports.fnRunCrons = function() {
   cronReceive.start();
 
   const cronTransactionQueue = cron.job('0/4 * * * * *', async function() {
+    let transactionQueue;
     try {
       logger.info('Start transaction queue');
       const getQueue = await TransactionQueueController.findAll();
       for ( const queue of getQueue ) {
-        const transactionQueue = queue;
+        transactionQueue = queue;
         const transactions = JSON.parse(transactionQueue.transactions);
         let msg;
         let chainTime = false;
@@ -99,6 +100,10 @@ exports.fnRunCrons = function() {
           }
         }
         if ( !chainTime ) {
+          console.log(chainTime);
+          transactionQueue.isProcessed = true;
+          transactionQueue.attemps += 1;
+          await TRANSACTIONQUEUECONTROLLER.update( transactionQueue.dataValues );
           const transaction = await TransactionController.sendTransaction( transactions, transactions[0].keystore_wallet);
           if ( transaction.length > 0 ) {
             if ( transactionQueue.isTipAuthor ) {
@@ -106,8 +111,6 @@ exports.fnRunCrons = function() {
               await global.clientRedis.expire('tip:'+envConfig.DEV_WALLET, 11);
             }
             if ( !transactionQueue.isRain && !transactionQueue.isTip ) {
-              transactionQueue.isProcessed = true;
-              transactionQueue.attemps += 1;
               await TransactionQueueController.update( transactionQueue.dataValues );
               msg.author.send(MessageUtil.msgEmbed('Withdraw process', msgs.withdraw_success));
               MessageUtil.reactionCompleteTip( msg );
@@ -144,6 +147,10 @@ exports.fnRunCrons = function() {
       }
     } catch (error) {
       if ( error.code != 50007 ) {
+        transactionQueue.isProcessed = true;
+        transactionQueue.isProcessedFailed = true;
+        transactionQueue.attemps += 1;
+        await TRANSACTIONQUEUECONTROLLER.update( transactionQueue.dataValues );
         await msg.clearReactions();
         await MessageUtil.reactionFail( msg );
         msg.author.send( msgs.queue_error );
