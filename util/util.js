@@ -243,9 +243,6 @@ class Util {
                 'The user'+ msg.author + ' rain you `' + amount +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) );
           }
         } else {
-          transactionQueue.isProcessed = true;
-          transactionQueue.attemps += 1;
-          await TRANSACTIONQUEUECONTROLLER.update( transactionQueue.dataValues );
           const fetchUser = await global.client.fetchUser( receive.user_discord_id_receive, false );
           const title = ( transactionQueue.isTip ? 'Tip receive': 'Rain receive');
           const titleDescription = ( transactionQueue.isTip ? ' tip you': ' rain you');
