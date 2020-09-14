@@ -231,7 +231,7 @@ class Util {
           if ( !isRain ) {
             if (receive.user_discord_id_receive !== msg.client.user.id) {
               await fetchUser.send(MessageUtil.msgEmbed('Tip receive',
-                  'The user'+ msg.author + ' tip you `' + amount +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) );
+                  'The user'+ msg.author + ' tip you `' + this.toFixed(amount) +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) );
             }
             if (msg.mentions.users.has(msg.client.user.id) && msg.mentions.users.array().length === 1) {
               logger.info('init deposit roulette');
@@ -239,7 +239,7 @@ class Util {
             }
           } else {
             await fetchUser.send(MessageUtil.msgEmbed('Rain receive',
-                'The user'+ msg.author + ' rain you `' + amount +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) );
+                'The user'+ msg.author + ' rain you `' + this.toFixed(amount) +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) );
           }
         } else {
           const fetchUser = await global.client.fetchUser( receive.user_discord_id_receive, false );
@@ -247,7 +247,7 @@ class Util {
           const titleDescription = ( transactionQueue.isTip ? ' tip you': ' rain you');
           if (receive.user_discord_id_receive !== msg.client.user.id) {
             await fetchUser.send(MessageUtil.msgEmbed(title,
-                'The user'+ msg.author + titleDescription +' `' + receive.helios_amount +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) );
+                'The user'+ msg.author + titleDescription +' `' + this.toFixed(receive.helios_amount) +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) );
           }
           if (msg.mentions.users.has(msg.client.user.id) && msg.mentions.users.array().length === 1) {
             logger.info('init deposit roulette');
@@ -258,10 +258,10 @@ class Util {
         const botData = await userInfoController.getUser( global.client.user.id );
         if (receiveTransaction.from === botData.wallet) {
           await fetchUser.send(MessageUtil.msgEmbed('Roulette transaction recieved',
-              'The '+ global.client.user.username + ' Bot sent you `' + await Helios.getAmountFloat(receiveTransaction.value) +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) );
+              'The '+ global.client.user.username + ' Bot sent you `' + this.toFixed(await Helios.getAmountFloat(receiveTransaction.value)) +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) );
         } else {
           await fetchUser.send(MessageUtil.msgEmbed('Transaction receive',
-              'The wallet '+ receiveTransaction.from + ' send you `' + await Helios.getAmountFloat(receiveTransaction.value) +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) );
+              'The wallet '+ receiveTransaction.from + ' send you `' + this.toFixed(await Helios.getAmountFloat(receiveTransaction.value)) +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) );
         }
       }
     } catch (error) {
@@ -428,6 +428,16 @@ class Util {
       return true;
     }
     return false;
+  }
+
+  /**
+   * 描述
+   * @date 2020-09-14
+   * @param {any} amount
+   * @return {any}
+   */
+  static toFixed(amount) {
+    return parseFloat(amount).toFixed(8);
   }
 }
 

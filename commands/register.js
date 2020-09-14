@@ -2,6 +2,9 @@
 const userInfoController = require('../controllers/userinfo.controller');
 const MessageUtil = require('../util/Discord/message');
 const Util = require('../util/util');
+const msgs = require('../util/msg.json');
+const conf = require('../config.js').jsonConfig();
+const logger = require(conf.pathLogger).getHeliosBotLogger();
 
 /**
    * register

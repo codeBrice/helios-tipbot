@@ -1,5 +1,7 @@
 const Util = require('../util/util');
 const wallet = require('./wallet');
+require('dotenv').config();
+const envConfig = process.env;
 
 /**
    * wfu

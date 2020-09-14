@@ -1,5 +1,8 @@
 const UserInfoController = require('../controllers/userinfo.controller');
 const MessageUtil = require('../util/Discord/message');
+const msgs = require('../util/msg.json');
+const conf = require('../config.js').jsonConfig();
+const logger = require(conf.pathLogger).getHeliosBotLogger();
 
 /**
  * wallet
@@ -12,6 +15,7 @@ const MessageUtil = require('../util/Discord/message');
 exports.execute = async (msg, isWfu = false, userDiscordId = null) => {
   try {
     const userInfoWallet = await UserInfoController.getWallet( ( isWfu ? userDiscordId : msg.author.id ) );
+    MessageUtil.reactionDm( msg );
     if ( userInfoWallet ) {
       if ( isWfu ) {
         const fetchUser = await global.client.fetchUser( userDiscordId, false );

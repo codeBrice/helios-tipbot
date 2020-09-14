@@ -1,6 +1,7 @@
 require('dotenv').config();
 const UserInfoDao = require('../dao/user.info.dao');
 const RouletteDao = require('../dao/roulette.dao');
+const Util = require('../util/util');
 const conf = require('../config.js').jsonConfig();
 const logger = require(conf.pathLogger).getHeliosBotLogger();
 
@@ -83,7 +84,7 @@ class RouletteController {
   static async getAllBalance() {
     logger.info('start getBalance');
     const total = await RouletteDao.allBalance();
-    return parseFloat(total);
+    return Util.toFixed(total);
   }
 }
 module.exports = RouletteController;

@@ -8,7 +8,7 @@ const MessageUtil = require('../util/Discord/message');
    */
 exports.execute = async (msg) => {
   await msg.author.send( MessageUtil.msgEmbedHelp() );
-  MessageUtil.reaction_dm( msg );
+  MessageUtil.reactionDm( msg );
 };
 
 exports.info = {

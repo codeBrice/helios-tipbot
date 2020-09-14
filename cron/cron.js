@@ -38,10 +38,10 @@ exports.fnRunCrons = function() {
             const botData = await UserInfo.getUser( global.client.user.id );
             if (receive.from === botData.wallet) {
               await fetchUser.send(MessageUtil.msgEmbed('Roulette transaction recieved',
-                  'The '+ global.client.user.username + ' Bot sent you `' + await Helios.getAmountFloat(receive.value) +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receive.hash}`) );
+                  'The '+ global.client.user.username + ' Bot sent you `' + Util.toFixed(await Helios.getAmountFloat(receive.value)) +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receive.hash}`) );
             } else {
               await fetchUser.send(MessageUtil.msgEmbed('Transaction receive',
-                  'The wallet '+ receive.from + ' send you `' + await Helios.getAmountFloat(receive.value) +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receive.hash}`) );
+                  'The wallet '+ receive.from + ' send you `' + Util.toFixed(await Helios.getAmountFloat(receive.value)) +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receive.hash}`) );
             }
           }
         }
@@ -103,7 +103,7 @@ exports.fnRunCrons = function() {
           console.log(chainTime);
           transactionQueue.isProcessed = true;
           transactionQueue.attemps += 1;
-          await TRANSACTIONQUEUECONTROLLER.update( transactionQueue.dataValues );
+          await TransactionQueueController.update( transactionQueue.dataValues );
           const transaction = await TransactionController.sendTransaction( transactions, transactions[0].keystore_wallet);
           if ( transaction.length > 0 ) {
             if ( transactionQueue.isTipAuthor ) {

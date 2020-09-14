@@ -26,7 +26,7 @@ exports.execute = async ( msg ) => {
     const userBalance = await RouletteController.getBalance(user.id);
     if ( userBalance != null ) {
       msg.author.send( MessageUtil.msgEmbed('Roulette Balance',
-          msgs.balance + userBalance + ' HLS') );
+          msgs.balance + Util.toFixed(userBalance) + ' HLS') );
       const isDm = Util.isDmChannel( msg.channel.type );
       if ( !isDm ) {
         MessageUtil.reactionDm( msg );

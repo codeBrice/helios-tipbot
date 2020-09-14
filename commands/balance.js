@@ -1,6 +1,9 @@
 const UserInfoController = require('../controllers/userinfo.controller');
 const Util = require('../util/util');
 const MessageUtil = require('../util/Discord/message');
+const msgs = require('../util/msg.json');
+const conf = require('../config.js').jsonConfig();
+const logger = require(conf.pathLogger).getHeliosBotLogger();
 
 /**
    * balance
@@ -17,7 +20,7 @@ exports.execute = async (msg) => {
     }
     const userInfoBalance = await UserInfoController.getBalance( msg.author.id );
     if ( userInfoBalance ) {
-      msg.author.send( MessageUtil.msgEmbed('Balance', msgs.balance + userInfoBalance + ' HLS') );
+      msg.author.send( MessageUtil.msgEmbed('Balance', msgs.balance + Util.toFixed(userInfoBalance) + ' HLS') );
       const isDm = Util.isDmChannel( msg.channel.type );
       if ( !isDm ) {
         MessageUtil.reactionDm( msg );

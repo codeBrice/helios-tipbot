@@ -6,7 +6,6 @@ const logger = require(conf.pathLogger).getHeliosBotLogger();
 const RouletteController = require('../controllers/roulette.controller');
 const UserInfoController = require('../controllers/userinfo.controller');
 
-
 /**
    * bankroll
    * @date 2020-09-01
@@ -27,7 +26,7 @@ exports.execute = async (message) => {
   const total = await RouletteController.getAllBalance();
 
   const title = 'BankRoll:';
-  const embed = Util.embedConstructor(title, (parseFloat(botBalance) - total)+' HLS');
+  const embed = Util.embedConstructor(title, Util.toFixed(parseFloat(botBalance) - total)+' HLS');
   await message.channel.send(embed);
 };
 
