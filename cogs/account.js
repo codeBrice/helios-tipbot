@@ -30,7 +30,7 @@ class Account {
   async generateAccount( msg ) {
     try {
       // console.log( 'msg guild id: ' + msg.guild + ' msg author id: ' + msg.author.id );
-      const isDm = UTIL.isDmChannel( msg.channel.type );
+      const isDm = Util.isDmChannel( msg.channel.type );
       if ( isDm ) {
         const userInfo = await userInfoController.generateUserWallet( msg.author.id );
         if ( userInfo ) {
@@ -249,7 +249,7 @@ class Account {
   async withdrawRoulette( msg ) {
     try {
       logger.info('start withdrawRoulette');
-      if ( UTIL.isDmChannel(msg.channel.type) ) {
+      if ( Util.isDmChannel(msg.channel.type) ) {
         const amount = Util.parseFloat( global.ctx.args[1] );
         // Amount Validate
         if (Util.amountValidator(amount, msg, msgs.invalid_command+
