@@ -165,7 +165,7 @@ async function rouletteLogic(message, bets) {
 
         if (user.command === color(numberRoulette, 'sg', 'sr', 'sb')) {
           const winAmount = winnerAmount(user.command, user.amount);
-          wonText += cash+user.userName+' won '.concat(String(winAmount) +' HLS'+ '\n');
+          wonText += user.userName+' won '.concat(String(winAmount) +' <:HLS:734894854974210182>'+ '\n');
 
           await rouletteWinner(parseFloat(winAmount) - (user.amount - (2 * user.amount / 100)),
               user.discordId, true);

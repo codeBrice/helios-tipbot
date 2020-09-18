@@ -88,7 +88,7 @@ class Account {
       }
       const userInfoBalance = await userInfoController.getBalance( msg.author.id );
       if ( userInfoBalance ) {
-        msg.author.send( MESSAGEUTIL.msg_embed('Balance', msgs.balance + userInfoBalance + ' HLS') );
+        msg.author.send( MESSAGEUTIL.msg_embed('Balance', userInfoBalance) );
         const isDm = Util.isDmChannel( msg.channel.type );
         if ( !isDm ) {
           MESSAGEUTIL.reaction_dm( msg );
