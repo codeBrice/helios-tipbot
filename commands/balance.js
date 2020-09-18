@@ -20,7 +20,7 @@ exports.execute = async (msg) => {
     }
     const userInfoBalance = await UserInfoController.getBalance( msg.author.id );
     if ( userInfoBalance ) {
-      msg.author.send( MessageUtil.msgEmbed('Balance', msgs.balance + Util.toFixed(userInfoBalance) + ' HLS') );
+      msg.author.send( MessageUtil.msgEmbed('Balance', Util.toFixed(userInfoBalance) + ' <:HLS:734894854974210182>') );
       const isDm = Util.isDmChannel( msg.channel.type );
       if ( !isDm ) {
         MessageUtil.reactionDm( msg );

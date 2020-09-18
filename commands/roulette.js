@@ -16,7 +16,6 @@ const green = '🟩';
 const top = '➖➖➖➖🔶➖➖➖➖';
 const initialText = '⬛🟥⬛🟥🟩⬛🟥⬛🟥';
 const dice = '🎲';
-const cash = '💰';
 
 /**
  * Method start roulette
@@ -45,7 +44,7 @@ exports.execute = async (message) => {
     if (await Util.rouletteBalanceValidator(amount, message,
         msgs.insufficient_balance+
         ', remember deposit in bot. `'+
-        global.client.config.PREFIX+'tip 10 @bot`')) return;
+        global.client.config.PREFIX+'rtip 10 @bot`')) return;
 
     // redis exist
     global.clientRedis.get('roulette'+message.guild.id, async (err, redisUser) => {
@@ -156,7 +155,7 @@ async function rouletteLogic(message, bets) {
 
         if (user.command === color(numberRoulette, 'sg', 'sr', 'sb')) {
           const winAmount = winnerAmount(user.command, user.amount);
-          wonText += cash+user.userName+' won '.concat(String(winAmount) +' HLS'+ '\n');
+          wonText += user.userName+' won '.concat(String(winAmount) +' <:HLS:734894854974210182>'+ '\n');
 
           await rouletteWinner(parseFloat(winAmount) - (user.amount - (2 * user.amount / 100)),
               user.discordId, true);
@@ -303,12 +302,12 @@ async function bankrollValidator( bets, message, win, text ) {
    */
 function minMaxValidatorRoulette( amount, msg ) {
   if ( amount < envConfig.MINTIP_BET ) {
-    msg.author.send( msgs.min_tip_roulette + '`(' + `${envConfig.MINTIP_BET }` +' HLS)`');
+    msg.author.send( msgs.min_tip_roulette + '`(' + `${envConfig.MINTIP_BET }` +' <:HLS:734894854974210182>)`');
     MessageUtil.reactionFail( msg );
     return true;
   }
   if ( amount > envConfig.MAXTIP_BET ) {
-    msg.author.send( msgs.max_tip_roulette + '`(' + `${envConfig.MAXTIP_BET }` +' HLS)`');
+    msg.author.send( msgs.max_tip_roulette + '`(' + `${envConfig.MAXTIP_BET }` +' <:HLS:734894854974210182>)`');
     MessageUtil.reactionFail( msg );
     return true;
   }

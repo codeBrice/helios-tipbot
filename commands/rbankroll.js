@@ -26,7 +26,7 @@ exports.execute = async (message) => {
   const total = await RouletteController.getAllBalance();
 
   const title = 'BankRoll:';
-  const embed = Util.embedConstructor(title, Util.toFixed(parseFloat(botBalance) - total)+' HLS');
+  const embed = Util.embedConstructor(title, Util.toFixed(parseFloat(botBalance) - total)+' <:HLS:734894854974210182>');
   await message.channel.send(embed);
 };
 

@@ -231,14 +231,14 @@ class Util {
           if ( !isRain ) {
             if (receive.user_discord_id_receive !== msg.client.user.id) {
               await fetchUser.send(MessageUtil.msgEmbed('Tip receive',
-                  'The user'+ msg.author + ' tip you `' + this.toFixed(amount) +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) );
+                  'The user'+ msg.author + ' tip you `' + this.toFixed(amount) +' <:HLS:734894854974210182>`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) );
             }
             if (msg.mentions.users.has(msg.client.user.id) && msg.mentions.users.array().length === 1) {
               logger.info('init deposit roulette');
               await RouletteController.deposit(msg.author.id, amount);
             }
           } else {
-            await fetchUser.send(MESSAGEUTIL.msg_embed('Rain receive',
+            await fetchUser.send(MessageUtil.msgEmbed('Rain receive',
                 'The user'+ msg.author + ' rain you `' + amount +' <:HLS:734894854974210182>`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) );
           }
         } else {
@@ -246,7 +246,7 @@ class Util {
           const title = ( transactionQueue.isTip ? 'Tip receive': 'Rain receive');
           const titleDescription = ( transactionQueue.isTip ? ' tip you': ' rain you');
           if (receive.user_discord_id_receive !== msg.client.user.id) {
-            await fetchUser.send(MESSAGEUTIL.msg_embed(title,
+            await fetchUser.send(MessageUtil.msg_embed(title,
                 'The user'+ msg.author + titleDescription +' `' + receive.helios_amount +' <:HLS:734894854974210182>`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) );
           }
           if (msg.mentions.users.has(msg.client.user.id) && msg.mentions.users.array().length === 1) {
@@ -257,10 +257,10 @@ class Util {
       } else {
         const botData = await userInfoController.getUser( global.client.user.id );
         if (receiveTransaction.from === botData.wallet) {
-          await fetchUser.send(MESSAGEUTIL.msg_embed('Roulette transaction recieved',
+          await fetchUser.send(MessageUtil.msgEmbed('Roulette transaction recieved',
               'The '+ global.client.user.username + ' Bot sent you `' + await HELIOS.getAmountFloat(receiveTransaction.value) +' <:HLS:734894854974210182>`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) );
         } else {
-          await fetchUser.send(MESSAGEUTIL.msg_embed('Transaction receive',
+          await fetchUser.send(MessageUtil.msgEmbed('Transaction receive',
               'The wallet '+ receiveTransaction.from + ' send you `' + await HELIOS.getAmountFloat(receiveTransaction.value) +' <:HLS:734894854974210182>`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) );
         }
       }

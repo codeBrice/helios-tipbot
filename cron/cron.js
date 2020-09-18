@@ -37,10 +37,10 @@ exports.fnRunCrons = function() {
             const fetchUser = await global.client.fetchUser( user.user_discord_id, false );
             const botData = await UserInfo.getUser( global.client.user.id );
             if (receive.from === botData.wallet) {
-              await fetchUser.send(MESSAGEUTIL.msg_embed('Roulette transaction recieved',
+              await fetchUser.send(MessageUtil.msgEmbed('Roulette transaction recieved',
                   'The '+ global.client.user.username + ' Bot sent you `' + await HELIOS.getAmountFloat(receive.value) +'  <:HLS:734894854974210182>`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receive.hash}`) );
             } else {
-              await fetchUser.send(MESSAGEUTIL.msg_embed('Transaction receive',
+              await fetchUser.send(MessageUtil.msgEmbed('Transaction receive',
                   'The wallet '+ receive.from + ' send you `' + await HELIOS.getAmountFloat(receive.value) +'  <:HLS:734894854974210182>`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receive.hash}`) );
             }
           }
