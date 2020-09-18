@@ -44,10 +44,10 @@ exports.fnRunCrons = function() {
             const botData = await USERINFO.getUser( global.client.user.id );
             if (receive.from === botData.wallet) {
               await fetchUser.send(MESSAGEUTIL.msg_embed('Roulette transaction recieved',
-                  'The '+ global.client.user.username + ' Bot sent you `' + await HELIOS.getAmountFloat(receive.value) +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receive.hash}`) );
+                  'The '+ global.client.user.username + ' Bot sent you `' + await HELIOS.getAmountFloat(receive.value) +' <:HLS:734894854974210182>`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receive.hash}`) );
             } else {
               await fetchUser.send(MESSAGEUTIL.msg_embed('Transaction receive',
-                  'The wallet '+ receive.from + ' send you `' + await HELIOS.getAmountFloat(receive.value) +' HLS`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receive.hash}`) );
+                  'The wallet '+ receive.from + ' send you `' + await HELIOS.getAmountFloat(receive.value) +' <:HLS:734894854974210182>`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receive.hash}`) );
             }
           }
         }
