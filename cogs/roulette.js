@@ -366,7 +366,7 @@ exports.bankroll = async (message) => {
   const total = await RouletteController.getAllBalance();
 
   const title = 'BankRoll:';
-  const embed = Util.embedConstructor(title, (parseFloat(botBalance) - total)+' HLS');
+  const embed = Util.embedConstructor(title, (parseFloat(botBalance) - total)+' <:HLS:734894854974210182>');
   await message.channel.send(embed);
 };
 
@@ -384,13 +384,13 @@ exports.getRouletteBalance = async ( msg ) => {
     if ( !user ) {
       await userInfo.generateUserWallet( msg.author.id );
       msg.author.send( messageUtil.msg_embed('Roulette Balance',
-          msgs.balance + 0 + ' HLS') );
+          msgs.balance + 0 + ' <:HLS:734894854974210182>') );
       return;
     }
     const userBalance = await RouletteController.getBalance(user.id);
     if ( userBalance != null ) {
       msg.author.send( messageUtil.msg_embed('Roulette Balance',
-          msgs.balance + userBalance + ' HLS') );
+          msgs.balance + userBalance + ' <:HLS:734894854974210182>') );
       const isDm = Util.isDmChannel( msg.channel.type );
       if ( !isDm ) {
         messageUtil.reaction_dm( msg );
