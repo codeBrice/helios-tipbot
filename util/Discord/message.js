@@ -16,7 +16,8 @@ class Message {
         await msg.react('🇮');
         await msg.react('🇵');
         await msg.react('✅'); */
-        await msg.react('💰');
+        await msg.react('734894854974210182');
+        await msg.react('723688924484206703');
     }
 
     async reaction_complete_rain ( msg ) {
@@ -25,6 +26,7 @@ class Message {
         await msg.react('🇮');
         await msg.react('🇳');
         await msg.react('💦'); */
+        await msg.react('734894854974210182');
         await msg.react('🌧️');
     }
 
@@ -55,7 +57,9 @@ class Message {
         let exampleEmbed = new Discord.RichEmbed()
         .setColor('#e6d46a')
         .setTitle(title)
-        .setDescription(description)
+        .setDescription(description+' <:HLS:734894854974210182>')
+/*         .attachFile('/desarrollo-personal/helios-tipbot/helios.jpg')
+        .setImage('attachment://helios.jpg'); */
         
         if ( isTip ) {
             exampleEmbed.addField('Check transaction in explorer', url);
@@ -70,7 +74,7 @@ class Message {
     msg_embed_help() {
         let exampleEmbed = new Discord.RichEmbed()
         .setColor('#e6d46a')
-        .setTitle('Helios TipBot v1.1.0 edition')
+        .setTitle('Colossus v1.1.0 edition')
         .setDescription('Use '+envConfig.ALIASCOMMAND+'help command for more information about a specific command')
         .addField(envConfig.ALIASCOMMAND+'register ', 'Generate an account wallet.')
         .addField(envConfig.ALIASCOMMAND+'balance '+envConfig.ALIASCOMMAND+'bal '+ envConfig.ALIASCOMMAND+'b ', 'Shows your account balance')
@@ -89,7 +93,7 @@ class Message {
     roulette_msg_embed_help() {
         let exampleEmbed = new Discord.RichEmbed()
         .setColor('#e6d46a')
-        .setTitle('Helios TipBot v1.0.0 roulette edition')
+        .setTitle('Colossus v1.0.0 roulette edition')
         .setDescription('Use '+envConfig.ALIASCOMMAND+'rhelp command for more information about a specific command')
         .addField(envConfig.ALIASCOMMAND+'rbalance '+envConfig.ALIASCOMMAND+'rbal '+ envConfig.ALIASCOMMAND+'rb ', 'Shows your roulette account balance')
         .addField(envConfig.ALIASCOMMAND+'rt '+ envConfig.ALIASCOMMAND+'rthls ' + envConfig.ALIASCOMMAND+'rtip ', 'tip among mentioned bot Example: '+ envConfig.ALIASCOMMAND+'rtip 1 @'+global.client.user.username)
