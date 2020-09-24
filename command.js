@@ -8,8 +8,8 @@ const Rain = require('./cogs/rain');
 const RAIN = new Rain();
 const MessageUtil = require('./util/Discord/message');
 const MESSAGEUTIL = new MessageUtil();
-const Coingecko = require('./middleware/coingecko');
-const COINGECKO = new Coingecko();
+const Prices = require('./middleware/prices');
+const PRICES = new Prices();
 const roulette = require('./cogs/roulette');
 const Util = require('./util/util');
 
@@ -74,7 +74,7 @@ class Command {
           MESSAGEUTIL.reaction_dm( msg );
           break;
         case 'price':
-          await COINGECKO.price( msg );
+          await PRICES.price( msg );
           break;
         case 'rt':
         case 'rthls':
