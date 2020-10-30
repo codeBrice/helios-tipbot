@@ -16,7 +16,7 @@ class Message {
         await msg.react('🇮');
         await msg.react('🇵');
         await msg.react('✅'); */
-        await msg.react('734894854974210182');
+        await msg.react('768201645884178492');
         await msg.react('723688924484206703');
     }
 
@@ -26,7 +26,7 @@ class Message {
         await msg.react('🇮');
         await msg.react('🇳');
         await msg.react('💦'); */
-        await msg.react('734894854974210182');
+        await msg.react('768201645884178492');
         await msg.react('🌧️');
     }
 
@@ -57,12 +57,12 @@ class Message {
         let exampleEmbed = new Discord.RichEmbed()
         .setColor('#e6d46a')
         .setTitle(title)
-        .setDescription(description+' <:HLS:734894854974210182>')
+        .setDescription(description+' <:CoinHelios:768201645884178492>')
 /*         .attachFile('/desarrollo-personal/helios-tipbot/helios.jpg')
         .setImage('attachment://helios.jpg'); */
         
         if ( isTip ) {
-            exampleEmbed.addField('Check transaction in explorer', url);
+            exampleEmbed.addField('View Transaction', url);
         }
 
         if ( isWfu ) {

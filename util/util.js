@@ -232,7 +232,7 @@ class Util {
           if ( !isRain ) {
             if (receive.user_discord_id_receive !== msg.client.user.id) {
               await fetchUser.send(MESSAGEUTIL.msg_embed('Tip receive',
-                  'The user'+ msg.author + ' tip you `' + amount +'`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) );
+                  `You were tipped ${amount} from ${msg.author}`, true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) );
             }
             if (msg.mentions.users.has(msg.client.user.id) && msg.mentions.users.array().length === 1) {
               logger.info('init deposit roulette');
@@ -240,15 +240,15 @@ class Util {
             }
           } else {
             await fetchUser.send(MESSAGEUTIL.msg_embed('Rain receive',
-                'The user'+ msg.author + ' rain you `' + amount +'`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) );
+                `You were rained ${amount} from ${msg.author}`, true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) );
           }
         } else {
           const fetchUser = await global.client.fetchUser( receive.user_discord_id_receive, false );
           const title = ( transactionQueue.isTip ? 'Tip receive': 'Rain receive');
-          const titleDescription = ( transactionQueue.isTip ? ' tip you': ' rain you');
+          const titleDescription = ( transactionQueue.isTip ? `tipped ${receive.helios_amount} from ${msg.author}`: ` rained ${receive.helios_amount} from ${msg.author}`);
           if (receive.user_discord_id_receive !== msg.client.user.id) {
             await fetchUser.send(MESSAGEUTIL.msg_embed(title,
-                'The user'+ msg.author + titleDescription +' `' + receive.helios_amount +'`', true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) );
+                'You were ' + titleDescription , true, `https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTx[0].hash}`) );
           }
           if (msg.mentions.users.has(msg.client.user.id) && msg.mentions.users.array().length === 1) {
             logger.info('init deposit roulette');

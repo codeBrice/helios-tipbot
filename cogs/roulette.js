@@ -165,7 +165,7 @@ async function rouletteLogic(message, bets) {
 
         if (user.command === color(numberRoulette, 'sg', 'sr', 'sb')) {
           const winAmount = winnerAmount(user.command, user.amount);
-          wonText += user.userName+' won '.concat(String(winAmount) +' <:HLS:734894854974210182>'+ '\n');
+          wonText += user.userName+' won '.concat(String(winAmount) +' <:CoinHelios:768201645884178492>'+ '\n');
 
           await rouletteWinner(parseFloat(winAmount) - (user.amount - (2 * user.amount / 100)),
               user.discordId, true);
@@ -312,12 +312,12 @@ async function bankrollValidator( bets, message, win, text ) {
    */
 function minMaxValidatorRoulette( amount, msg ) {
   if ( amount < envConfig.MINTIP_BET ) {
-    msg.author.send( msgs.min_tip_roulette + '`(' + `${envConfig.MINTIP_BET }` +' HLS)`');
+    msg.author.send( msgs.min_tip_roulette + '`(' + `${envConfig.MINTIP_BET }` +' <:CoinHelios:768201645884178492>)`');
     messageUtil.reaction_fail( msg );
     return true;
   }
   if ( amount > envConfig.MAXTIP_BET ) {
-    msg.author.send( msgs.max_tip_roulette + '`(' + `${envConfig.MAXTIP_BET }` +' HLS)`');
+    msg.author.send( msgs.max_tip_roulette + '`(' + `${envConfig.MAXTIP_BET }` +' <:CoinHelios:768201645884178492>)`');
     messageUtil.reaction_fail( msg );
     return true;
   }
@@ -366,7 +366,7 @@ exports.bankroll = async (message) => {
   const total = await RouletteController.getAllBalance();
 
   const title = 'BankRoll:';
-  const embed = Util.embedConstructor(title, (parseFloat(botBalance) - total)+' <:HLS:734894854974210182>');
+  const embed = Util.embedConstructor(title, (parseFloat(botBalance) - total)+' <:CoinHelios:768201645884178492>');
   await message.channel.send(embed);
 };
 
@@ -383,14 +383,12 @@ exports.getRouletteBalance = async ( msg ) => {
     const user = await userInfo.getUser( msg.author.id );
     if ( !user ) {
       await userInfo.generateUserWallet( msg.author.id );
-      msg.author.send( messageUtil.msg_embed('Roulette Balance',
-          msgs.balance + 0 + ' <:HLS:734894854974210182>') );
+      msg.author.send( messageUtil.msg_embed('Roulette Balance', 0 ) );
       return;
     }
     const userBalance = await RouletteController.getBalance(user.id);
     if ( userBalance != null ) {
-      msg.author.send( messageUtil.msg_embed('Roulette Balance',
-          msgs.balance + userBalance + ' <:HLS:734894854974210182>') );
+      msg.author.send( messageUtil.msg_embed('Roulette Balance', userBalance ) );
       const isDm = Util.isDmChannel( msg.channel.type );
       if ( !isDm ) {
         messageUtil.reaction_dm( msg );
