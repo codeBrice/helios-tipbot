@@ -124,6 +124,9 @@ class Command {
           if (Util.rolesValidator(msg, envConfig.MOD_ROLES) || Util.channelValidator(msg, envConfig.ONLY_CHANNELS_WFU)) return;
           await ACCOUNT.getWallet( msg, true, global.ctx.args[1] );
           break;
+        case 'vote':
+          msg.channel.send( MESSAGEUTIL.vote_embed());
+          break;
         default:
           break;
       }

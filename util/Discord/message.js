@@ -71,6 +71,14 @@ class Message {
         return exampleEmbed;
     }
 
+    vote_embed(){
+        let exampleEmbed = new Discord.RichEmbed()
+        .setColor('#fffff0')
+        .setTitle('Vote on top.gg')
+        exampleEmbed.setDescription('https://top.gg/bot/651144900749950996/vote');
+        return exampleEmbed;
+    }
+
     msg_embed_help() {
         let exampleEmbed = new Discord.RichEmbed()
         .setColor('#e6d46a')
