@@ -41,12 +41,12 @@ class Rain {
 
             let amount = Util.parseFloat( global.ctx.args[1] );
             if ( amount < envConfig.MIN_RAIN ) {
-                msg.author.send( msgs.min_rain + '`(' + `${envConfig.MIN_RAIN }` +' HLS)`');
+                msg.author.send( msgs.min_rain + '`(' + `${envConfig.MIN_RAIN }` +' <:CoinHelios:768201645884178492>)`');
                 MESSAGEUTIL.reaction_fail( msg );
                 return;
             }
             if( amount > envConfig.MAX_RAIN ) {
-                msg.author.send( msgs.max_rain + '`(' + `${envConfig.MAX_RAIN }` +' HLS)`');
+                msg.author.send( msgs.max_rain + '`(' + `${envConfig.MAX_RAIN }` +' <:CoinHelios:768201645884178492>)`');
                 MESSAGEUTIL.reaction_fail( msg );
                 return;
             }

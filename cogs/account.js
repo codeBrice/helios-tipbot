@@ -220,14 +220,13 @@ class Account {
       const user = await userInfoController.getUser( msg.author.id );
       if ( !user ) {
         await userInfoController.generateUserWallet( msg.author.id );
-        msg.author.send( MESSAGEUTIL.msg_embed('Roulette Balance',
-            msgs.balance + 0 + ' HLS') );
+        msg.author.send( MESSAGEUTIL.msg_embed('Roulette Balance', 0 ) );
         return;
       }
       const userBalance = await RouletteController.getBalance(user.id);
       if ( userBalance != null ) {
         msg.author.send( MESSAGEUTIL.msg_embed('Roulette Balance',
-            msgs.balance + userBalance + ' HLS') );
+            msgs.balance + userBalance) );
         const isDm = Util.isDmChannel( msg.channel.type );
         if ( !isDm ) {
           MESSAGEUTIL.reaction_dm( msg );

@@ -50,12 +50,12 @@ class Prices{
             });
             const exampleEmbed = new Discord.RichEmbed()
             .setColor('#e6d46a')
-            .setTitle('Helios Protocol <:HLS:734894854974210182>')
+            .setTitle('Helios Protocol <:CoinHelios:768201645884178492>')
             .setDescription('')
-            .setDescription('<:btc:758741958490980463> ' + hlsBtcData.last + 
+            .setDescription('<:btc:758741958490980463> ' + parseFloat(hlsBtcData.last).toFixed(8) + 
             '                                          \n' +
-            '<:ether:758743689588637706> ' + hlsEthData.last + '\n' +
-            '<:usdt:758744340637417472> ' + hlsUsdtData.last +'\n \n'+
+            '<:ether:758743689588637706> ' + parseFloat(hlsEthData.last).toFixed(8) + '\n' +
+            '<:usdt:758744340637417472> ' + parseFloat(hlsUsdtData.last).toFixed(8) +'\n \n'+
             'Mkt Cap: $' + coingeckoInfo.market_data.market_cap.usd.toFixed(2) + '\n' +
             'Supply: ' + new Intl.NumberFormat().format(coingeckoInfo.market_data.total_supply) + '\n' +
             'Volume: $' + coingeckoInfo.market_data.total_volume.usd.toFixed(8) + '\n \n' +
