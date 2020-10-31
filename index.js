@@ -10,6 +10,19 @@ const COMMAND = new Command();
 const redis = require("redis");
 const clientRedis = redis.createClient();
 const cron = require('./cron/cron.js').fnRunCrons();
+
+const DBL = require("dblapi.js");
+const dbl = new DBL(envConfig.TOPGGTOKEN, client);
+
+// top.gg
+dbl.on('posted', () => {
+    console.log('Server count posted!');
+})
+  
+dbl.on('error', e => {
+    console.log(`Oops! ${e}`);
+});
+
 global.client = client;
 global.clientRedis = clientRedis;
 global.client.config = {
