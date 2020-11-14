@@ -128,9 +128,11 @@ class Command {
           break;
         case 'vote':
         case 'v':
+        case 'faucet':
           msg.channel.send( MESSAGEUTIL.vote_embed());
           break;
-        case 'franking':
+        case 'leaders':
+        case 'leaderboard':
           if(!Util.isDmChannel()) {
             TOPGGVOTE.findTopTen( msg );
           }
