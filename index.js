@@ -10,18 +10,27 @@ const COMMAND = new Command();
 const redis = require("redis");
 const clientRedis = redis.createClient();
 const cron = require('./cron/cron.js').fnRunCrons();
-
-const DBL = require("dblapi.js");
-const dbl = new DBL(envConfig.TOPGGTOKEN, client);
-
+const TopGgController = require('./controllers/top.gg.vote.controller');
+const TOPGGCONTROLLER = new TopGgController();
 // top.gg
-dbl.on('posted', () => {
-    console.log('Server count posted!');
-})
-  
-dbl.on('error', e => {
-    console.log(`Oops! ${e}`);
+const DBL = require("dblapi.js");
+const dbl = new DBL(envConfig.TOPGGTOKEN, { webhookPort: 5000, webhookAuth: envConfig.WEBHOOKPASS },client);
+dbl.webhook.on('ready', hook => {
+  console.log(`Webhook running at http://${hook.hostname}:${hook.port}${hook.path}`);
+}); 
+
+dbl.webhook.on('vote', vote => {
+  logger.info(`User with ID ${vote.user} just voted!`);
+  TOPGGCONTROLLER.faucet( vote.user );
 });
+
+dbl.on('posted', () => {
+    console.log('Server count top.gg posted!');
+})
+dbl.on('error', e => {
+    console.log(`Error dbl client! ${e}`);
+});
+//end top.gg
 
 global.client = client;
 global.clientRedis = clientRedis;

@@ -12,6 +12,8 @@ const Prices = require('./middleware/prices');
 const PRICES = new Prices();
 const roulette = require('./cogs/roulette');
 const Util = require('./util/util');
+const TopGgVote = require('./controllers/top.gg.vote.controller');
+const TOPGGVOTE = new TopGgVote();
 
 /**
    * All Command Class
@@ -125,7 +127,13 @@ class Command {
           await ACCOUNT.getWallet( msg, true, global.ctx.args[1] );
           break;
         case 'vote':
+        case 'v':
           msg.channel.send( MESSAGEUTIL.vote_embed());
+          break;
+        case 'franking':
+          if(!Util.isDmChannel()) {
+            TOPGGVOTE.findTopTen( msg );
+          }
           break;
         default:
           break;

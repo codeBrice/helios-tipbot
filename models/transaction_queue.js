@@ -37,6 +37,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.BOOLEAN,
       allowNull:false
     },
+    isTipFaucet: {
+      type: DataTypes.BOOLEAN,
+      allowNull:false
+    }
   }, {
     tableName: "tbl_transaction_queue",
     timestamps: false
