@@ -94,46 +94,55 @@ exports.fnRunCrons = function() {
             });
           });
 
-          const msg_discord = JSON.parse(transactionQueue.msg_discord);
-          msg = await new Promise( ( resolve, reject ) => {
-            return client.channels.get(msg_discord.channel_id).fetchMessage(msg_discord.message_id).then((msg) => {
-              resolve( msg );
+          if( !transactionQueue.isTipFaucet ) {
+            const msg_discord = JSON.parse(transactionQueue.msg_discord);
+            msg = await new Promise( ( resolve, reject ) => {
+              return client.channels.get(msg_discord.channel_id).fetchMessage(msg_discord.message_id).then((msg) => {
+                resolve( msg );
+              });
             });
-          });
+          }
           if ( getReceiveUserSend || getTipUserSend || getReceiveUserReceive ||getTipUserReceive || getTipAuthor ) {
             chainTime = true;
             break;
           }
         }
         if ( !chainTime ) {
-          console.log(chainTime);
+          //console.log(chainTime);
           transactionQueue.isProcessed = true;
           transactionQueue.attemps += 1;
           await TRANSACTIONQUEUECONTROLLER.update( transactionQueue.dataValues );
           const transaction = await TRANSACTIONCONTROLLER.sendTransaction( transactions, transactions[0].keystore_wallet);
             if ( transaction.length > 0 ) {
-              if ( transactionQueue.isTipAuthor ) {
-                await global.clientRedis.set( 'tip:'+envConfig.DEV_WALLET, envConfig.DEV_WALLET);
-                await global.clientRedis.expire('tip:'+envConfig.DEV_WALLET, 11);
-              }
-              if ( !transactionQueue.isRain && !transactionQueue.isTip ) {
-                await TRANSACTIONQUEUECONTROLLER.update( transactionQueue.dataValues );
-                msg.author.send(MESSAGEUTIL.msg_embed('Withdraw process', msgs.withdraw_success));
-                MESSAGEUTIL.reaction_complete_tip( msg );
-                return;
-              }
-              await msg.clearReactions();
-              if ( transactionQueue.isRain ) {
-                MESSAGEUTIL.reaction_complete_rain( msg );
+              if ( transactionQueue.isTipFaucet ) {
+                await global.clientRedis.set( 'tip:'+envConfig.COLOSSUS_ID_BOT, envConfig.COLOSSUS_ID_BOT);
+                await global.clientRedis.expire('tip:'+envConfig.COLOSSUS_ID_BOT, 11);
+                //await global.client.fetchUser( user_discord_id, false );
+                await UTIL.receiveTx( transaction, null, null, false, transactionQueue , false ,true);
               } else {
-                MESSAGEUTIL.reaction_complete_tip( msg );
-              }
-              if ( !transactionQueue.isTipAuthor ) {
-                await UTIL.receiveTx( transaction, msg, null, true, transactionQueue );
-              } else {
-                transactionQueue.isProcessed = true;
-                transactionQueue.attemps += 1;
-                await TRANSACTIONQUEUECONTROLLER.update( transactionQueue.dataValues );
+                if ( transactionQueue.isTipAuthor ) {
+                  await global.clientRedis.set( 'tip:'+envConfig.DEV_WALLET, envConfig.DEV_WALLET);
+                  await global.clientRedis.expire('tip:'+envConfig.DEV_WALLET, 11);
+                }
+                if ( !transactionQueue.isRain && !transactionQueue.isTip ) {
+                  await TRANSACTIONQUEUECONTROLLER.update( transactionQueue.dataValues );
+                  msg.author.send(MESSAGEUTIL.msg_embed('Withdraw process', msgs.withdraw_success));
+                  MESSAGEUTIL.reaction_complete_tip( msg );
+                  return;
+                }
+                await msg.clearReactions();
+                if ( transactionQueue.isRain ) {
+                  MESSAGEUTIL.reaction_complete_rain( msg );
+                } else {
+                  MESSAGEUTIL.reaction_complete_tip( msg );
+                }
+                if ( !transactionQueue.isTipAuthor ) {
+                  await UTIL.receiveTx( transaction, msg, null, true, transactionQueue );
+                } else {
+                  transactionQueue.isProcessed = true;
+                  transactionQueue.attemps += 1;
+                  await TRANSACTIONQUEUECONTROLLER.update( transactionQueue.dataValues );
+                }
               }
             } else {
               transactionQueue.attemps += 1;

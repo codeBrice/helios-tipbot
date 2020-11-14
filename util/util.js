@@ -191,9 +191,10 @@ class Util {
    * @param {any} isQueue=false
    * @param {any} transactionQueue
    * @param {any} isRain=false
+   * @param {any} isTipFaucet=false
    * @return {any}
    */
-  async receiveTx( transaction, msg, amount, isQueue = false, transactionQueue, isRain = false) {
+  async receiveTx( transaction, msg, amount, isQueue = false, transactionQueue, isRain = false, isTipFaucet = false ) {
     for ( const receive of transaction ) {
       if ( isQueue ) {
         await global.clientRedis.set( 'tip:'+receive.user_discord_id_send, receive.user_discord_id_send );
@@ -204,7 +205,16 @@ class Util {
       if ( receiveTx.length > 0 ) {
         for ( const receiveTransaction of receiveTx ) {
           const isWalletBot = await USERINFO.findByWallet( receiveTransaction.from );
-          this.sendMsgReceive( isQueue, isRain, isWalletBot, msg, amount, transactionQueue, receiveTx, receive);
+          if( !isTipFaucet ) {
+            this.sendMsgReceive( isQueue, isRain, isWalletBot, msg, amount, transactionQueue, receiveTx, receive);
+          } else {
+            const fetchUser = await global.client.fetchUser( receive.user_discord_id_receive, false );
+            let exampleEmbed = new Discord.RichEmbed()
+              .setColor('#e6d46a')
+              .setTitle('Vote Succeeded')
+              .setDescription(`You have received ${receive.helios_amount.toLocaleString(undefined,{ minimumFractionDigits: 5 })} HLS <:CoinHelios:768201645884178492> as a thank you! \n [View Transaction](https://heliosprotocol.io/block-explorer/#main_page-transaction&${receiveTransaction.hash})`)
+            await fetchUser.send(exampleEmbed);
+          }
         }
       }
     }
