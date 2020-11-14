@@ -94,8 +94,8 @@ class Message {
         .addField(envConfig.ALIASCOMMAND+'rain ', 'Distribute a tip amount amongst active users')
         .addField(envConfig.ALIASCOMMAND+'price ', 'Get Helios price')
         .addField(envConfig.ALIASCOMMAND+'tipauthor ', 'Send a tip to dev wallet.')
-        .addField(envConfig.ALIASCOMMAND+'vote ', 'Get link from vote on top.gg.')
-        .addField(envConfig.ALIASCOMMAND+'franking ', 'Get top ten ranking from top.gg vote.')
+        .addField(envConfig.ALIASCOMMAND+'vote | v | faucet', 'Get link from vote on top.gg.')
+        .addField(envConfig.ALIASCOMMAND+'leaders | leaderboard ', 'Get top ten ranking from top.gg vote.')
 
         return exampleEmbed;
     }
