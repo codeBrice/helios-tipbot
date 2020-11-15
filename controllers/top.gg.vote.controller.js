@@ -35,7 +35,7 @@ class TopGgVoteController {
             }
             const botData = await USERINFO.getUser( envConfig.COLOSSUS_ID_BOT );
             let amountFaucet = await HELIOS.getBalance( envConfig.FAUCETWALLET );
-            amountFaucet = amountFaucet * parseInt(envConfig.PERCENTFAUCET) / 100;
+            amountFaucet = amountFaucet * parseFloat(envConfig.PERCENTFAUCET) / 100;
             // transaction object
             const tx = [];
             const transactionEntitie = new SendTransaction();
