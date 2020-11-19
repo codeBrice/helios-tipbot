@@ -68,7 +68,7 @@ class TopGgVoteController {
             if ( topTen.length ) {
                 for( let user of topTen) {
                     const fetchUser = await global.client.fetchUser( user.user_discord_id, false );
-                    description += `${i+=1} - ${fetchUser}     ${user.vote_count} votes \n`;
+                    description += `${i+=1} - ${fetchUser.username} / ${user.vote_count} votes \n`;
                 }
             }
             exampleEmbed.setDescription( description )
