@@ -19,8 +19,8 @@ class Tip {
                 isSplit+' isRoulette:'+isRoulette);
             //console.log( ctx.args[2] );
             if(isRoulette) {
-                const channels = JSON.parse(envConfig.ONLY_CHANNELS_ROULETTE);
-                if (Util.channelValidator(msg, channels)) return;
+                /* const channels = JSON.parse(envConfig.ONLY_CHANNELS_ROULETTE);
+                if (Util.channelValidator(msg, channels)) return; */
                 if (msg.mentions.users.array().length > 1 ||
                     !msg.mentions.users.has(msg.client.user.id)){
                         await MESSAGEUTIL.reaction_fail( msg );
