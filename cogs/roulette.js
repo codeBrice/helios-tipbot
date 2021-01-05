@@ -40,8 +40,8 @@ exports.execute = async (message) => {
 
     logger.info('Start roulette');
     // channel correct
-    const channels = JSON.parse(envConfig.ONLY_CHANNELS_ROULETTE);
-    if (Util.channelValidator(message, channels)) return;
+    /* const channels = JSON.parse(envConfig.ONLY_CHANNELS_ROULETTE);
+    if (Util.channelValidator(message, channels)) return; */
 
     // min max validates
     if (minMaxValidatorRoulette(amount, message)) return;
@@ -354,8 +354,8 @@ exports.lastWins = async (message) => {
 exports.bankroll = async (message) => {
   logger.info('start bankroll');
 
-  const channels = JSON.parse(envConfig.ONLY_CHANNELS_ROULETTE);
-  if (Util.channelValidator(message, channels)) return;
+  /* const channels = JSON.parse(envConfig.ONLY_CHANNELS_ROULETTE);
+  if (Util.channelValidator(message, channels)) return; */
 
   const botBalance = await userInfo.getBalance( message.client.user.id );
   if ( !botBalance ) {
